@@ -52,22 +52,24 @@ const ChatInterface = ({
 
   if (!conversation) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-400">
-        <svg
-          className="w-24 h-24 mb-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-          />
-        </svg>
-        <p className="text-lg font-medium">Select a conversation</p>
-        <p className="text-sm">Choose a conversation from the list to start messaging</p>
+      <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-gray-50 to-white p-8">
+        <div className="w-28 h-28 mx-auto mb-6 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+          <svg
+            className="w-14 h-14 text-indigo-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+            />
+          </svg>
+        </div>
+        <p className="text-xl font-bold text-gray-900 mb-2">Select a conversation</p>
+        <p className="text-sm text-gray-600">Choose a conversation from the list to start messaging</p>
       </div>
     );
   }
@@ -75,10 +77,10 @@ const ChatInterface = ({
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="flex items-center p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+      <div className="flex items-center p-4 border-b-2 border-gray-100 bg-gradient-to-r from-white to-gray-50 sticky top-0 z-10 shadow-sm">
         <button
           onClick={onBack}
-          className="mr-3 p-2 hover:bg-gray-100 rounded-full lg:hidden"
+          className="mr-3 p-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-full lg:hidden transition-colors"
         >
           <svg
             className="w-6 h-6"
@@ -100,27 +102,35 @@ const ChatInterface = ({
             <img
               src={otherParticipant.avatar_url}
               alt={otherParticipant.name}
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-11 h-11 rounded-full object-cover ring-2 ring-indigo-100"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-md">
               {getInitials(otherParticipant?.name)}
             </div>
           )}
           <div>
-            <p className="font-semibold text-gray-900">
+            <p className="font-bold text-gray-900">
               {otherParticipant?.name}
             </p>
-            <p className="text-xs text-gray-500">Online</p>
+            <p className="text-xs text-indigo-600 flex items-center gap-1">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              Online
+            </p>
           </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-br from-gray-50 to-white">
         {messages.length === 0 ? (
-          <div className="text-center text-gray-400 mt-8">
-            <p>No messages yet. Start the conversation!</p>
+          <div className="text-center mt-16">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <p className="text-gray-600 font-medium">No messages yet. Start the conversation!</p>
           </div>
         ) : (
           messages.map((message, index) => {
@@ -146,10 +156,10 @@ const ChatInterface = ({
                         <img
                           src={otherParticipant.avatar_url}
                           alt=""
-                          className="w-8 h-8 rounded-full object-cover"
+                          className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-200"
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white text-xs font-semibold">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-md">
                           {getInitials(otherParticipant?.name)}
                         </div>
                       )}
@@ -160,10 +170,10 @@ const ChatInterface = ({
                   {/* Message bubble */}
                   <div>
                     <div
-                      className={`rounded-2xl px-4 py-2 ${
+                      className={`rounded-2xl px-4 py-3 shadow-sm ${
                         isOwn
-                          ? 'bg-primary-600 text-primary-600'
-                          : 'bg-gray-200 text-gray-900'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                          : 'bg-white text-gray-900 border border-gray-200'
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap break-words">
@@ -171,7 +181,7 @@ const ChatInterface = ({
                       </p>
                     </div>
                     <p
-                      className={`text-xs text-gray-500 mt-1 ${
+                      className={`text-xs text-gray-500 mt-1.5 font-medium ${
                         isOwn ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -187,8 +197,8 @@ const ChatInterface = ({
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-200 bg-white">
-        <form onSubmit={handleSend} className="flex items-end space-x-2">
+      <div className="p-5 border-t-2 border-gray-100 bg-gradient-to-r from-white to-gray-50">
+        <form onSubmit={handleSend} className="flex items-center space-x-3">
           <div className="flex-1">
             <textarea
               ref={inputRef}
@@ -197,14 +207,14 @@ const ChatInterface = ({
               onKeyPress={handleKeyPress}
               placeholder="Type a message..."
               rows="1"
-              className="w-full px-4 py-2 border border-gray-300 rounded-full resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              style={{ minHeight: '40px', maxHeight: '120px' }}
+              className="w-full px-5 py-3 border-2 border-gray-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+              style={{ minHeight: '48px', maxHeight: '120px' }}
             />
           </div>
           <button
             type="submit"
             disabled={!messageText.trim() || isSending}
-            className="flex-shrink-0 w-10 h-10 bg-primary-600 text-white rounded-full flex items-center justify-center hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl flex items-center justify-center hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
           >
             {isSending ? (
               <svg

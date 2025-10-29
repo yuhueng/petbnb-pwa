@@ -4,62 +4,133 @@ const Landing = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Welcome to <span className="text-primary-600">PetBNB</span>
-          </h1>
-          <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
-            Find trusted pet sitters in your area or offer your pet care services.
-            Connect with loving pet owners and create lasting relationships.
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-indigo-200 to-purple-200 rounded-full blur-3xl opacity-30 -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full blur-3xl opacity-30 translate-x-1/2 translate-y-1/2"></div>
 
-          <div className="flex justify-center">
-            <button
-              onClick={() => navigate('/owner/explore')}
-              className="px-12 py-4 bg-primary-600 text-primary-600 rounded-lg font-semibold hover:bg-primary-700 transition-colors text-lg shadow-lg hover:shadow-xl"
-            >
-              Get Started
-            </button>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
+          <div className="text-center">
+            {/* Main Heading */}
+            <div className="mb-8">
+              <h1 className="text-6xl sm:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 mb-4 animate-fade-in">
+                PetBNB
+              </h1>
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <div className="h-1 w-20 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full"></div>
+                <span className="text-3xl">🐾</span>
+                <div className="h-1 w-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"></div>
+              </div>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 max-w-4xl mx-auto">
+              Your Pet's Perfect Home Away From Home
+            </h2>
+
+            <p className="text-xl sm:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+              Connect with loving pet sitters in your area or share your passion for pets by becoming a sitter yourself.
+            </p>
+
+            {/* CTA Button */}
+            <div className="flex justify-center mb-6">
+              <button
+                onClick={() => navigate('/owner/explore')}
+                className="group relative px-12 py-5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl font-bold text-xl shadow-2xl hover:shadow-indigo-500/50 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  Get Started
+                  <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-500 flex items-center justify-center gap-2 flex-wrap">
+              <span className="flex items-center gap-1">
+                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                No account needed to browse
+              </span>
+              <span className="hidden sm:inline text-gray-300">•</span>
+              <span className="flex items-center gap-1">
+                <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Login anytime from your profile
+              </span>
+            </p>
           </div>
-
-          <p className="text-sm text-gray-500 mt-4">
-            No account needed to browse • Login anytime from your profile
-          </p>
         </div>
+      </div>
 
-        <div className="mt-24 grid md:grid-cols-3 gap-8">
-          <div className="text-center p-6">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">🐕</span>
+      {/* Features Section */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Feature 1 */}
+          <div className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-t-2xl"></div>
+            <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-md">
+              <span className="text-5xl">🐕</span>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Find Pet Sitters</h3>
-            <p className="text-gray-600">
-              Browse trusted pet sitters in your area with verified reviews
+            <h3 className="text-2xl font-bold mb-3 text-gray-900">Find Pet Sitters</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Browse trusted, verified pet sitters in your area with detailed profiles and genuine reviews from pet owners
             </p>
           </div>
 
-          <div className="text-center p-6">
-            <div className="w-16 h-16 bg-secondary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">🏠</span>
+          {/* Feature 2 */}
+          <div className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-t-2xl"></div>
+            <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-md">
+              <span className="text-5xl">🏠</span>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Offer Pet Care</h3>
-            <p className="text-gray-600">
-              Become a pet sitter and earn money doing what you love
+            <h3 className="text-2xl font-bold mb-3 text-gray-900">Offer Pet Care</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Turn your love for animals into income. Set your own schedule and rates while caring for adorable pets
             </p>
           </div>
 
-          <div className="text-center p-6">
-            <div className="w-16 h-16 bg-accent-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">💬</span>
+          {/* Feature 3 */}
+          <div className="group relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 to-indigo-500 rounded-t-2xl"></div>
+            <div className="w-20 h-20 bg-gradient-to-br from-pink-100 to-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-md">
+              <span className="text-5xl">💬</span>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Connect & Book</h3>
-            <p className="text-gray-600">
-              Message sitters directly and book with confidence
+            <h3 className="text-2xl font-bold mb-3 text-gray-900">Connect & Book</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Chat directly with sitters, share your pet's needs, and book services with complete peace of mind
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl p-12 text-center shadow-2xl">
+          <div className="grid md:grid-cols-3 gap-8 text-white">
+            <div>
+              <div className="text-5xl font-bold mb-2">1000+</div>
+              <div className="text-indigo-100">Trusted Sitters</div>
+            </div>
+            <div>
+              <div className="text-5xl font-bold mb-2">5000+</div>
+              <div className="text-purple-100">Happy Pets</div>
+            </div>
+            <div>
+              <div className="text-5xl font-bold mb-2">10k+</div>
+              <div className="text-pink-100">Successful Bookings</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="text-center py-12 text-gray-500">
+        <p className="text-sm">Need help? Contact us at <span className="text-indigo-600 font-medium">support@petbnb.com</span></p>
       </div>
     </div>
   );

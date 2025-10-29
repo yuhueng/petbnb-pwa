@@ -3,6 +3,7 @@ import { useListingStore } from '@/store/listingStore';
 import { useAuthStore } from '@/store/authStore';
 import SitterCard from '@/components/owner/SitterCard';
 import ListingDetailModal from '@/components/owner/ListingDetailModal';
+import { parseSearchQuery, convertToListingFilters } from '@/services/aiSearchService';
 
 const Explore = () => {
   const { listings, isLoading, error, fetchListings } = useListingStore();
@@ -16,6 +17,9 @@ const Explore = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedListing, setSelectedListing] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [aiSearching, setAiSearching] = useState(false);
+  const [aiUnderstanding, setAiUnderstanding] = useState(null);
+  const [aiParsedCriteria, setAiParsedCriteria] = useState(null);
 
   // Fetch listings on mount, excluding current user's listings
   useEffect(() => {
@@ -23,18 +27,47 @@ const Explore = () => {
     fetchListings(initialFilters);
   }, [fetchListings, user]);
 
-  // Handle search
-  const handleSearch = (e) => {
+  // Handle AI-powered search
+  const handleSearch = async (e) => {
     e.preventDefault();
-    const searchFilters = {};
-    if (searchTerm) {
-      searchFilters.city = searchTerm;
+
+    if (!searchTerm.trim()) {
+      // If empty search, just reset
+      const resetFilters = user ? { excludeUserId: user.id } : {};
+      fetchListings(resetFilters);
+      setAiUnderstanding(null);
+      setAiParsedCriteria(null);
+      return;
     }
-    // Always exclude current user's listings
-    if (user) {
-      searchFilters.excludeUserId = user.id;
+
+    try {
+      setAiSearching(true);
+      setAiUnderstanding(null);
+      setAiParsedCriteria(null);
+
+      // Parse the natural language query with AI
+      const aiCriteria = await parseSearchQuery(searchTerm);
+
+      // Store the AI understanding and parsed criteria
+      setAiUnderstanding(aiCriteria.understanding || 'Processing your search...');
+      setAiParsedCriteria(aiCriteria);
+
+      // Convert AI criteria to listing filters
+      const searchFilters = convertToListingFilters(aiCriteria);
+
+      // Always exclude current user's listings
+      if (user) {
+        searchFilters.excludeUserId = user.id;
+      }
+
+      // Fetch listings with AI-parsed filters
+      fetchListings(searchFilters);
+    } catch (error) {
+      console.error('AI Search Error:', error);
+      setAiUnderstanding('Sorry, there was an error processing your search. Please try again.');
+    } finally {
+      setAiSearching(false);
     }
-    fetchListings(searchFilters);
   };
 
   // Handle filter change
@@ -69,6 +102,8 @@ const Explore = () => {
       accepted_pet_types: '',
     });
     setSearchTerm('');
+    setAiUnderstanding(null);
+    setAiParsedCriteria(null);
     // Always exclude current user's listings
     const resetFilters = user ? { excludeUserId: user.id } : {};
     fetchListings(resetFilters);
@@ -113,15 +148,43 @@ const Explore = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by city..."
+                placeholder="Describe what you're looking for... (e.g., 'dog sitter in Brooklyn with a fenced yard')"
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                disabled={aiSearching}
               />
             </div>
             <button
               type="submit"
-              className="px-6 py-2 bg-primary-600 text-text-inverse rounded-lg font-medium hover:bg-primary-700 transition-colors"
+              disabled={aiSearching}
+              className="px-6 py-2 bg-primary-600 text-text-inverse rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Search
+              {aiSearching ? (
+                <>
+                  <svg
+                    className="animate-spin h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Searching...
+                </>
+              ) : (
+                'Search'
+              )}
             </button>
             <button
               type="button"
@@ -144,6 +207,78 @@ const Explore = () => {
               Filters
             </button>
           </form>
+
+          {/* AI Understanding Display */}
+          {aiUnderstanding && (
+            <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="w-6 h-6 text-indigo-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-indigo-900 mb-1">AI Understanding:</h3>
+                  <p className="text-sm text-indigo-800">{aiUnderstanding}</p>
+                  {aiParsedCriteria && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {aiParsedCriteria.city && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          📍 {aiParsedCriteria.city}
+                        </span>
+                      )}
+                      {aiParsedCriteria.service_type && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          🏠 {aiParsedCriteria.service_type}
+                        </span>
+                      )}
+                      {aiParsedCriteria.accepted_pet_types && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          🐾 {aiParsedCriteria.accepted_pet_types}
+                        </span>
+                      )}
+                      {aiParsedCriteria.accepted_pet_sizes && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          📏 {aiParsedCriteria.accepted_pet_sizes.join(', ')}
+                        </span>
+                      )}
+                      {aiParsedCriteria.amenities && aiParsedCriteria.amenities.length > 0 && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                          ✨ {aiParsedCriteria.amenities.join(', ')}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setAiUnderstanding(null);
+                    setAiParsedCriteria(null);
+                  }}
+                  className="flex-shrink-0 text-indigo-400 hover:text-indigo-600"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Filters Panel */}
           {showFilters && (

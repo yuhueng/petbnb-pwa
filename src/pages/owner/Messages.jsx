@@ -124,13 +124,12 @@ const OwnerMessages = () => {
     if (!selectedConversation) return;
 
     try {
-      const newMessage = await chatService.sendMessage({
+      await chatService.sendMessage({
         conversationId: selectedConversation.id,
         senderId: user.id,
         content,
       });
-
-      setMessages((prev) => [...prev, newMessage]);
+      // Don't manually update messages - real-time subscription handles it
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to send message');
@@ -144,8 +143,8 @@ const OwnerMessages = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -154,60 +153,84 @@ const OwnerMessages = () => {
   if (isMobileView) {
     if (selectedConversation) {
       return (
-        <div className="h-[calc(100vh-8rem)]">
-          <ChatInterface
-            conversation={selectedConversation}
-            messages={messages}
-            currentUserId={user?.id}
-            onSendMessage={handleSendMessage}
-            onBack={handleBack}
-          />
+        <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+          <div className="flex-1 overflow-hidden">
+            <ChatInterface
+              conversation={selectedConversation}
+              messages={messages}
+              currentUserId={user?.id}
+              onSendMessage={handleSendMessage}
+              onBack={handleBack}
+            />
+          </div>
         </div>
       );
     }
 
     return (
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Messages</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Chat with your pet sitters
-          </p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 max-h-[calc(100vh-2rem)] flex flex-col">
+          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-5 flex-shrink-0">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              Messages
+            </h2>
+            <p className="text-indigo-100 mt-1 text-sm">
+              Chat with your pet sitters
+            </p>
+          </div>
+          <div className="overflow-y-auto flex-1">
+            <ConversationList
+              conversations={conversations}
+              onSelectConversation={handleSelectConversation}
+              selectedConversationId={selectedConversation?.id}
+            />
+          </div>
         </div>
-        <ConversationList
-          conversations={conversations}
-          onSelectConversation={handleSelectConversation}
-          selectedConversationId={selectedConversation?.id}
-        />
       </div>
     );
   }
 
   // Desktop view: show both side by side
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="grid grid-cols-3 h-[calc(100vh-8rem)]">
-        {/* Conversation List */}
-        <div className="col-span-1 border-r border-gray-200 overflow-y-auto">
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-bold text-gray-900">Messages</h2>
-          </div>
-          <ConversationList
-            conversations={conversations}
-            onSelectConversation={handleSelectConversation}
-            selectedConversationId={selectedConversation?.id}
-          />
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+          <div className="grid grid-cols-3 h-[calc(100vh-10rem)]">
+            {/* Conversation List */}
+            <div className="col-span-1 border-r border-gray-200 overflow-y-auto">
+              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-5 sticky top-0 z-10">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  Messages
+                </h2>
+              </div>
+              <ConversationList
+                conversations={conversations}
+                onSelectConversation={handleSelectConversation}
+                selectedConversationId={selectedConversation?.id}
+              />
+            </div>
 
-        {/* Chat Interface */}
-        <div className="col-span-2">
-          <ChatInterface
-            conversation={selectedConversation}
-            messages={messages}
-            currentUserId={user?.id}
-            onSendMessage={handleSendMessage}
-            onBack={handleBack}
-          />
+            {/* Chat Interface */}
+            <div className="col-span-2">
+              <ChatInterface
+                conversation={selectedConversation}
+                messages={messages}
+                currentUserId={user?.id}
+                onSendMessage={handleSendMessage}
+                onBack={handleBack}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

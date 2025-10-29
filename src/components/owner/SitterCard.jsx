@@ -81,7 +81,7 @@ const SitterCard = ({ listing, onClick }) => {
               />
             ) : (
               <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                <span className="text-primary-700 font-semibold text-lg">
+                <span className="text-text-info font-semibold text-lg">
                   {sitterName.charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -90,8 +90,8 @@ const SitterCard = ({ listing, onClick }) => {
 
           {/* Sitter Details */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 truncate">{sitterName}</h3>
-            <p className="text-sm text-gray-600 flex items-center">
+            <h3 className="text-lg font-semibold text-text-primary truncate">{sitterName}</h3>
+            <p className="text-sm text-text-secondary flex items-center">
               <svg
                 className="w-4 h-4 mr-1 text-gray-400"
                 fill="none"
@@ -120,25 +120,25 @@ const SitterCard = ({ listing, onClick }) => {
       {/* Card Body - Listing Info */}
       <div className="p-4">
         {/* Title */}
-        <h4 className="text-base font-semibold text-gray-900 mb-2 line-clamp-1">{title}</h4>
+        <h4 className="text-base font-semibold text-text-primary mb-2 line-clamp-1">{title}</h4>
 
         {/* Description */}
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{description}</p>
+        <p className="text-sm text-text-secondary mb-3 line-clamp-2">{description}</p>
 
         {/* Services */}
         <div className="mb-3">
-          <p className="text-xs text-gray-500 mb-1">Services:</p>
+          <p className="text-xs text-text-tertiary mb-1">Services:</p>
           <div className="flex flex-wrap gap-1">
             {service_type?.slice(0, 3).map((service) => (
               <span
                 key={service}
-                className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full font-medium"
+                className="px-2 py-1 bg-blue-50 text-text-info text-xs rounded-full font-medium"
               >
                 {service}
               </span>
             ))}
             {service_type?.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+              <span className="px-2 py-1 bg-gray-100 text-text-secondary text-xs rounded-full">
                 +{service_type.length - 3} more
               </span>
             )}
@@ -147,18 +147,18 @@ const SitterCard = ({ listing, onClick }) => {
 
         {/* Accepted Pets */}
         <div className="mb-3">
-          <p className="text-xs text-gray-500 mb-1">Accepts:</p>
+          <p className="text-xs text-text-tertiary mb-1">Accepts:</p>
           <div className="flex flex-wrap gap-1">
             {accepted_pet_types?.slice(0, 3).map((pet) => (
               <span
                 key={pet}
-                className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full font-medium capitalize"
+                className="px-2 py-1 bg-green-50 text-text-success text-xs rounded-full font-medium capitalize"
               >
                 {pet}
               </span>
             ))}
             {accepted_pet_types?.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+              <span className="px-2 py-1 bg-gray-100 text-text-secondary text-xs rounded-full">
                 +{accepted_pet_types.length - 3} more
               </span>
             )}
@@ -168,18 +168,18 @@ const SitterCard = ({ listing, onClick }) => {
         {/* Amenities */}
         {amenities && amenities.length > 0 && (
           <div className="mb-3">
-            <p className="text-xs text-gray-500 mb-1">Amenities:</p>
+            <p className="text-xs text-text-tertiary mb-1">Amenities:</p>
             <div className="flex flex-wrap gap-1">
               {amenities.slice(0, 2).map((amenity) => (
                 <span
                   key={amenity}
-                  className="px-2 py-1 bg-amber-50 text-amber-700 text-xs rounded-full font-medium"
+                  className="px-2 py-1 bg-amber-50 text-text-warning text-xs rounded-full font-medium"
                 >
                   {amenity.replace(/_/g, ' ')}
                 </span>
               ))}
               {amenities.length > 2 && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                <span className="px-2 py-1 bg-gray-100 text-text-secondary text-xs rounded-full">
                   +{amenities.length - 2} more
                 </span>
               )}
@@ -193,18 +193,18 @@ const SitterCard = ({ listing, onClick }) => {
         <div className="flex items-center justify-between">
           {minPrice ? (
             <div>
-              <span className="text-2xl font-bold text-gray-900">${minPrice.toFixed(0)}</span>
-              <span className="text-sm text-gray-600">/day</span>
+              <span className="text-2xl font-bold text-text-primary">${minPrice.toFixed(0)}</span>
+              <span className="text-sm text-text-secondary">/day</span>
             </div>
           ) : (
-            <span className="text-sm text-gray-500">Price upon request</span>
+            <span className="text-sm text-text-tertiary">Price upon request</span>
           )}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onClick?.();
             }}
-            className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+            className="px-4 py-2 bg-primary-600 text-text-inverse text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
           >
             View Details
           </button>

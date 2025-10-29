@@ -91,7 +91,7 @@ const Explore = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Explore Pet Sitters</h1>
+          <h1 className="text-2xl font-bold text-text-primary mb-4">Explore Pet Sitters</h1>
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="flex gap-2">
@@ -119,7 +119,7 @@ const Explore = () => {
             </div>
             <button
               type="submit"
-              className="px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+              className="px-6 py-2 bg-primary-600 text-text-inverse rounded-lg font-medium hover:bg-primary-700 transition-colors"
             >
               Search
             </button>
@@ -150,7 +150,7 @@ const Explore = () => {
             <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">City</label>
                   <input
                     type="text"
                     name="city"
@@ -161,7 +161,7 @@ const Explore = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
                     Service Type
                   </label>
                   <select
@@ -178,7 +178,7 @@ const Explore = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pet Type</label>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Pet Type</label>
                   <select
                     name="accepted_pet_types"
                     value={filters.accepted_pet_types}
@@ -198,13 +198,13 @@ const Explore = () => {
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={handleApplyFilters}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+                  className="px-4 py-2 bg-primary-600 text-text-inverse rounded-lg font-medium hover:bg-primary-700 transition-colors"
                 >
                   Apply Filters
                 </button>
                 <button
                   onClick={handleClearFilters}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                  className="px-4 py-2 bg-gray-200 text-text-secondary rounded-lg font-medium hover:bg-gray-300 transition-colors"
                 >
                   Clear All
                 </button>
@@ -220,7 +220,7 @@ const Explore = () => {
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mb-4"></div>
-            <p className="text-gray-600">Loading pet sitters...</p>
+            <p className="text-text-secondary">Loading pet sitters...</p>
           </div>
         )}
 
@@ -241,7 +241,7 @@ const Explore = () => {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span className="text-red-800">{error}</span>
+              <span className="text-text-error-dark">{error}</span>
             </div>
           </div>
         )}
@@ -249,7 +249,7 @@ const Explore = () => {
         {/* Results Count */}
         {!isLoading && !error && (
           <div className="mb-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-text-secondary">
               {listings.length} {listings.length === 1 ? 'sitter' : 'sitters'} found
             </p>
           </div>
@@ -259,7 +259,7 @@ const Explore = () => {
         {!isLoading && !error && listings.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20">
             <svg
-              className="w-24 h-24 text-gray-300 mb-4"
+              className="w-24 h-24 text-text-disabled mb-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -271,11 +271,11 @@ const Explore = () => {
                 d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No sitters found</h3>
-            <p className="text-gray-600 mb-6">Try adjusting your search or filters</p>
+            <h3 className="text-xl font-semibold text-text-primary mb-2">No sitters found</h3>
+            <p className="text-text-secondary mb-6">Try adjusting your search or filters</p>
             <button
               onClick={handleClearFilters}
-              className="px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+              className="px-6 py-2 bg-primary-600 text-text-inverse rounded-lg font-medium hover:bg-primary-700 transition-colors"
             >
               Clear Filters
             </button>

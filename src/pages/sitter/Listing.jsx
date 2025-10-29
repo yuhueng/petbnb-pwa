@@ -225,7 +225,7 @@ const Listing = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <svg
-          className="w-24 h-24 text-gray-300 mb-6"
+          className="w-24 h-24 text-text-disabled mb-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -237,11 +237,11 @@ const Listing = () => {
             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
           />
         </svg>
-        <h2 className="text-2xl font-bold text-gray-900 mb-3">Please log in to manage your listing</h2>
-        <p className="text-gray-600 mb-6">You need to be logged in to create and manage listings</p>
+        <h2 className="text-2xl font-bold text-text-primary mb-3">Please log in to manage your listing</h2>
+        <p className="text-text-secondary mb-6">You need to be logged in to create and manage listings</p>
         <button
           onClick={() => navigate('/login')}
-          className="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+          className="px-6 py-3 bg-primary-600 text-text-inverse rounded-lg font-medium hover:bg-primary-700 transition-colors"
         >
           Log In
         </button>
@@ -250,20 +250,41 @@ const Listing = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">My Listing</h1>
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-text-primary mb-6">My Listings</h1>
 
-      {/* Create/Edit Form */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">
-          {isEditing ? 'Edit Listing' : 'Create New Listing'}
-        </h2>
+      {/* Create/Edit Form Modal */}
+      {isEditing && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+            onClick={resetForm}
+          />
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Modal */}
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Close Button */}
+              <button
+                onClick={resetForm}
+                className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+              >
+                <svg className="w-6 h-6 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="p-6">
+                <h2 className="text-xl font-semibold text-text-primary mb-4">
+                  {isEditing ? 'Edit Listing' : 'Create New Listing'}
+                </h2>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
           {/* Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Title <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              Title <span className="text-text-error">*</span>
             </label>
             <input
               type="text"
@@ -278,8 +299,8 @@ const Listing = () => {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              Description <span className="text-text-error">*</span>
             </label>
             <textarea
               name="description"
@@ -294,8 +315,8 @@ const Listing = () => {
 
           {/* Service Types */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Service Types <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Service Types <span className="text-text-error">*</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
               {serviceTypes.map((service) => (
@@ -314,8 +335,8 @@ const Listing = () => {
 
           {/* Accepted Pet Types */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Accepted Pet Types <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Accepted Pet Types <span className="text-text-error">*</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
               {petTypes.map((pet) => (
@@ -334,7 +355,7 @@ const Listing = () => {
 
           {/* Accepted Pet Sizes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
               Accepted Pet Sizes
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -354,7 +375,7 @@ const Listing = () => {
 
           {/* Max Pets */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Max Pets</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Max Pets</label>
             <input
               type="number"
               name="max_pets"
@@ -368,7 +389,7 @@ const Listing = () => {
           {/* Pricing */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Price per Day ($)
               </label>
               <input
@@ -383,7 +404,7 @@ const Listing = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Price per Hour ($)
               </label>
               <input
@@ -403,7 +424,7 @@ const Listing = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Location</h3>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Address</label>
               <input
                 type="text"
                 name="address"
@@ -415,7 +436,7 @@ const Listing = () => {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">City</label>
                 <input
                   type="text"
                   name="city"
@@ -426,7 +447,7 @@ const Listing = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">State</label>
                 <input
                   type="text"
                   name="state"
@@ -437,7 +458,7 @@ const Listing = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Postal Code</label>
                 <input
                   type="text"
                   name="postal_code"
@@ -452,7 +473,7 @@ const Listing = () => {
 
           {/* Amenities */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Amenities</label>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Amenities</label>
             <div className="grid grid-cols-2 gap-3">
               {amenitiesOptions.map((amenity) => (
                 <label key={amenity.value} className="flex items-center space-x-2 cursor-pointer">
@@ -471,7 +492,7 @@ const Listing = () => {
           {/* Availability */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-text-secondary mb-1">
                 Available From
               </label>
               <input
@@ -483,7 +504,7 @@ const Listing = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Available To</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">Available To</label>
               <input
                 type="date"
                 name="available_to"
@@ -496,7 +517,7 @@ const Listing = () => {
 
           {/* House Rules */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">House Rules</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">House Rules</label>
             <textarea
               name="house_rules"
               value={formData.house_rules}
@@ -509,7 +530,7 @@ const Listing = () => {
 
           {/* Cancellation Policy */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-text-secondary mb-1">
               Cancellation Policy
             </label>
             <textarea
@@ -527,112 +548,146 @@ const Listing = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 bg-primary-600 text-text-inverse rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? 'Saving...' : isEditing ? 'Update Listing' : 'Create Listing'}
             </button>
-            {isEditing && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-6 py-3 bg-gray-200 text-text-secondary rounded-lg font-medium hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
           </div>
-        </form>
-      </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* My Listings */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">My Listings</h2>
-
-        {isLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading...</p>
+      <div>
+        {isLoading && myListings.length === 0 ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           </div>
         ) : myListings.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>No listings yet. Create your first listing above!</p>
+          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+            <svg className="w-24 h-24 text-text-disabled mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <h3 className="text-xl font-semibold text-text-primary mb-2">No listings yet</h3>
+            <p className="text-text-secondary mb-6">Create your first listing to start accepting bookings</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {myListings.map((listing) => (
               <div
                 key={listing.id}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
               >
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="text-lg font-semibold">{listing.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {listing.city && listing.state
-                        ? `${listing.city}, ${listing.state}`
-                        : 'No location'}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      listing.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {listing.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-
-                <p className="text-gray-700 text-sm mb-3 line-clamp-2">{listing.description}</p>
-
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {listing.service_type?.map((service) => (
+                {/* Card Header */}
+                <div className="bg-gradient-to-r from-primary-500 to-primary-600 p-4">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-lg font-bold text-text-inverse line-clamp-1">{listing.title}</h3>
                     <span
-                      key={service}
-                      className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        listing.is_active
+                          ? 'bg-green-100 text-text-success-dark'
+                          : 'bg-gray-100 text-text-primary'
+                      }`}
                     >
-                      {service}
+                      {listing.is_active ? 'Active' : 'Inactive'}
                     </span>
-                  ))}
+                  </div>
+                  <p className="text-sm text-primary-100 mt-1">
+                    {listing.city && listing.state
+                      ? `${listing.city}, ${listing.state}`
+                      : 'No location'}
+                  </p>
                 </div>
 
-                <div className="text-sm text-gray-600 mb-4">
-                  {listing.price_per_day && (
-                    <span className="mr-4">
-                      ${(listing.price_per_day / 100).toFixed(2)}/day
-                    </span>
-                  )}
-                  {listing.price_per_hour && (
-                    <span>${(listing.price_per_hour / 100).toFixed(2)}/hour</span>
-                  )}
-                </div>
+                {/* Card Body */}
+                <div className="p-4">
+                  <p className="text-text-secondary text-sm mb-3 line-clamp-2">{listing.description}</p>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(listing)}
-                    className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleToggleStatus(listing.id, listing.is_active)}
-                    className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    {listing.is_active ? 'Deactivate' : 'Activate'}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(listing.id)}
-                    className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    Delete
-                  </button>
+                  {/* Services */}
+                  <div className="mb-3">
+                    <p className="text-xs text-text-tertiary mb-1">Services:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {listing.service_type?.slice(0, 3).map((service) => (
+                        <span
+                          key={service}
+                          className="px-2 py-1 bg-blue-50 text-text-info text-xs rounded-full font-medium capitalize"
+                        >
+                          {service.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                      {listing.service_type?.length > 3 && (
+                        <span className="px-2 py-1 bg-gray-100 text-text-tertiary text-xs rounded-full">
+                          +{listing.service_type.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Pricing */}
+                  <div className="mb-4 pt-3 border-t border-gray-100">
+                    <p className="text-xs text-text-tertiary mb-1">Pricing:</p>
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      {listing.price_per_day && (
+                        <span className="font-semibold text-text-primary">
+                          ${(listing.price_per_day / 100).toFixed(2)}/day
+                        </span>
+                      )}
+                      {listing.price_per_hour && (
+                        <span className="font-semibold text-text-primary">
+                          ${(listing.price_per_hour / 100).toFixed(2)}/hour
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => handleEdit(listing)}
+                      className="px-3 py-2 bg-blue-600 text-text-inverse text-xs rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleToggleStatus(listing.id, listing.is_active)}
+                      className="px-3 py-2 bg-gray-600 text-text-inverse text-xs rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                    >
+                      {listing.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(listing.id)}
+                      className="px-3 py-2 bg-red-600 text-text-inverse text-xs rounded-lg hover:bg-red-700 transition-colors font-medium"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Floating Add Button */}
+      <button
+        onClick={() => setIsEditing(true)}
+        className="fixed bottom-8 right-8 w-16 h-16 bg-primary-600 text-text-inverse rounded-full shadow-lg hover:bg-primary-700 hover:shadow-xl transition-all duration-300 flex items-center justify-center z-40 group"
+        aria-label="Create new listing"
+      >
+        <svg className="w-8 h-8 transform group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
     </div>
   );
 };

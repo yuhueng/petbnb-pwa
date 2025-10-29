@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, activeRole, profile, switchRole, isAuthenticated } = useAuthStore();
+  const { activeRole, profile, switchRole, isAuthenticated } = useAuthStore();
 
   const isOwnerView = location.pathname.startsWith('/owner');
   const isSitterView = location.pathname.startsWith('/sitter');
@@ -29,13 +29,6 @@ const Layout = () => {
 
   const tabs = isOwnerView ? ownerTabs : isSitterView ? sitterTabs : [];
 
-  const handleLogout = async () => {
-    const result = await logout();
-    if (result.success) {
-      toast.success('Logged out successfully');
-      navigate('/');
-    }
-  };
 
   const handleRoleSwitch = async () => {
     if (activeRole === USER_ROLES.OWNER) {
@@ -77,20 +70,12 @@ const Layout = () => {
             </h1>
             <div className="flex gap-2">
               {isAuthenticated ? (
-                <>
-                  <button
-                    onClick={handleRoleSwitch}
-                    className="px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-md hover:bg-primary-100"
-                  >
-                    Switch to {activeRole === USER_ROLES.OWNER ? 'Sitter' : 'Owner'}
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                  >
-                    Logout
-                  </button>
-                </>
+                <button
+                  onClick={handleRoleSwitch}
+                  className="px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-md hover:bg-primary-100"
+                >
+                  Switch to {activeRole === USER_ROLES.OWNER ? 'Sitter' : 'Owner'}
+                </button>
               ) : (
                 <button
                   onClick={() => navigate(isOwnerView ? '/owner/profile' : '/sitter/profile')}

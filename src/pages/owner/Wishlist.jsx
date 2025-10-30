@@ -120,7 +120,7 @@ const Wishlist = () => {
         <p className="text-gray-600 mb-6">You need to be logged in to save your favorite sitters</p>
         <button
           onClick={() => navigate('/owner/profile')}
-          className="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+          className="px-6 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-xl transition-all"
         >
           Log In
         </button>
@@ -154,7 +154,7 @@ const Wishlist = () => {
             <div>
               <h1 className="text-4xl font-bold text-gray-900">My Wishlist</h1>
               <p className="text-gray-600 mt-1">
-                {wishlistItems.length} {wishlistItems.length === 1 ? 'favorite sitter' : 'favorite sitters'}
+                {wishlistItems.length} {wishlistItems.length === 1 ? 'saved sitter' : 'saved sitters'}
               </p>
             </div>
           </div>

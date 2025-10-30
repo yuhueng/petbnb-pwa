@@ -61,11 +61,22 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-sm font-bold text-gray-900 truncate">
-                    {otherParticipant?.name}
-                  </p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 truncate">
+                      {otherParticipant?.name}
+                    </p>
+                    {otherParticipant?.role && (
+                      <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        otherParticipant.role === 'sitter'
+                          ? 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700'
+                          : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700'
+                      }`}>
+                        {otherParticipant.role === 'sitter' ? 'Pet Sitter' : 'Pet Owner'}
+                      </span>
+                    )}
+                  </div>
                   {lastMessage && (
-                    <p className="text-xs text-gray-500 font-medium">
+                    <p className="text-xs text-gray-500 font-medium flex-shrink-0">
                       {formatDate(lastMessage.created_at, 'MMM dd')}
                     </p>
                   )}

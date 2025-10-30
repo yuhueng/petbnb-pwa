@@ -57,12 +57,21 @@ const SitterCard = ({ listing, onClick, isInWishlist = false, onToggleWishlist }
   // Format pet types for display
   const petTypesDisplay = accepted_pet_types?.slice(0, 3).join(', ') || 'No pets';
 
-  // Calculate minimum price for display
-  const minPrice = (() => {
-    const prices = [];
-    if (price_per_day) prices.push(price_per_day / 100);
-    if (price_per_hour) prices.push((price_per_hour / 100) * 24); // Convert hourly to daily equivalent
-    return prices.length > 0 ? Math.min(...prices) : null;
+  // Calculate price display (match modal logic)
+  const priceDisplay = (() => {
+    const parts = [];
+    if (price_per_day) {
+      parts.push({ value: price_per_day / 100, unit: 'day' });
+    }
+    if (price_per_hour) {
+      parts.push({ value: price_per_hour / 100, unit: 'hour' });
+    }
+
+    // Show the first available price (prefer daily)
+    if (parts.length > 0) {
+      return parts[0];
+    }
+    return null;
   })();
 
   return (
@@ -219,10 +228,10 @@ const SitterCard = ({ listing, onClick, isInWishlist = false, onToggleWishlist }
       {/* Card Footer - Pricing */}
       <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
         <div className="flex items-center justify-between">
-          {minPrice ? (
+          {priceDisplay ? (
             <div>
-              <span className="text-2xl font-bold text-text-primary">${minPrice.toFixed(0)}</span>
-              <span className="text-sm text-text-secondary">/day</span>
+              <span className="text-2xl font-bold text-text-primary">${priceDisplay.value.toFixed(0)}</span>
+              <span className="text-sm text-text-secondary">/{priceDisplay.unit}</span>
             </div>
           ) : (
             <span className="text-sm text-text-tertiary">Price upon request</span>

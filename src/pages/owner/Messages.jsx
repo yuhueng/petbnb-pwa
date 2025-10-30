@@ -108,7 +108,8 @@ const OwnerMessages = () => {
   const loadConversations = async () => {
     try {
       setIsLoading(true);
-      const data = await chatService.getConversations(user.id);
+      // Filter to only show conversations where current user is the owner
+      const data = await chatService.getConversations(user.id, 'owner');
       setConversations(data);
     } catch (error) {
       console.error('Error loading conversations:', error);

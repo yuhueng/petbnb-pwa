@@ -91,7 +91,8 @@ const SitterMessages = () => {
   const loadConversations = async () => {
     try {
       setIsLoading(true);
-      const data = await chatService.getConversations(user.id);
+      // Filter to only show conversations where current user is the sitter
+      const data = await chatService.getConversations(user.id, 'sitter');
       setConversations(data);
     } catch (error) {
       console.error('Error loading conversations:', error);

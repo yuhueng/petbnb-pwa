@@ -193,21 +193,25 @@ CREATE TABLE messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
   sender_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  
+
   -- Message content
   content TEXT NOT NULL,
   attachment_url TEXT,
-  
+
+  -- Metadata for special message types (e.g., booking requests)
+  metadata JSONB DEFAULT NULL,
+
   -- Read status
   is_read BOOLEAN DEFAULT false,
   read_at TIMESTAMPTZ,
-  
+
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX idx_messages_conversation ON messages(conversation_id, created_at DESC);
 CREATE INDEX idx_messages_sender ON messages(sender_id);
 CREATE INDEX idx_messages_unread ON messages(conversation_id, is_read) WHERE is_read = false;
+CREATE INDEX idx_messages_metadata ON messages USING GIN (metadata);
 
 -- ============================================
 -- 7. REVIEWS (Linked to profiles - for sitters only)

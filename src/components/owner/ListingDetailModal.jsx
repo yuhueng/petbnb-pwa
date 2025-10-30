@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { chatService } from '@/services/chatService';
+import { bookingService } from '@/services/bookingService';
+import toast from 'react-hot-toast';
 
 /**
  * @typedef {Object} Profile
@@ -48,6 +50,13 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [isStartingConversation, setIsStartingConversation] = useState(false);
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [isCreatingBooking, setIsCreatingBooking] = useState(false);
+  const [bookingForm, setBookingForm] = useState({
+    startDate: '',
+    endDate: '',
+    specialRequests: '',
+  });
 
   if (!isOpen || !listing) return null;
 
@@ -87,8 +96,10 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
 
     setIsStartingConversation(true);
     try {
-      // Get or create conversation between current user and sitter
-      const conversation = await chatService.getOrCreateConversation(user.id, profiles.id);
+      // Get or create conversation - explicitly set roles
+      // user.id = owner (current user viewing the listing)
+      // profiles.id = sitter (owner of the listing)
+      const conversation = await chatService.getOrCreateConversationExplicit(user.id, profiles.id);
 
       console.log('✅ Conversation created/found:', conversation.id);
 
@@ -105,6 +116,96 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
     }
   };
 
+  // Handle booking form submission
+  const handleCreateBooking = async () => {
+    if (!user) {
+      toast.error('Please log in to book');
+      navigate('/login');
+      return;
+    }
+
+    // Validate dates
+    if (!bookingForm.startDate || !bookingForm.endDate) {
+      toast.error('Please select start and end dates');
+      return;
+    }
+
+    const start = new Date(bookingForm.startDate);
+    const end = new Date(bookingForm.endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (start < today) {
+      toast.error('Start date cannot be in the past');
+      return;
+    }
+
+    if (end <= start) {
+      toast.error('End date must be after start date');
+      return;
+    }
+
+    // Calculate total price
+    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    let totalPrice = null;
+
+    if (price_per_day) {
+      totalPrice = price_per_day * days; // Already in cents
+    }
+
+    setIsCreatingBooking(true);
+    try {
+      // Create booking
+      const booking = await bookingService.createBooking({
+        listingId: listing.id,
+        ownerId: user.id,
+        sitterId: profiles.id,
+        startDate: bookingForm.startDate,
+        endDate: bookingForm.endDate,
+        totalPrice,
+        specialRequests: bookingForm.specialRequests || null,
+        petIds: [], // TODO: Allow selecting pets
+      });
+
+      console.log('✅ Booking created:', booking.id);
+
+      // Get or create conversation - explicitly set owner and sitter roles
+      // user.id = owner (person making the booking)
+      // profiles.id = sitter (person whose listing is being booked)
+      const conversation = await chatService.getOrCreateConversationExplicit(user.id, profiles.id);
+      console.log('✅ Conversation ready:', conversation.id);
+
+      // Send booking request message
+      const requestMessage = `📋 New booking request!\n\n📅 Dates: ${start.toLocaleDateString()} - ${end.toLocaleDateString()}\n🏠 Service: ${title}\n${totalPrice ? `💰 Total: $${(totalPrice / 100).toFixed(2)}` : ''}\n${bookingForm.specialRequests ? `📝 Special requests: ${bookingForm.specialRequests}` : ''}\n\nPlease review and respond.`;
+
+      const message = await chatService.sendMessage({
+        conversationId: conversation.id,
+        senderId: user.id,
+        content: requestMessage,
+        metadata: {
+          type: 'booking_request',
+          bookingId: booking.id,
+        },
+      });
+
+      console.log('✅ Booking request message sent:', message.id);
+      toast.success('Booking request sent successfully!');
+
+      // Close modal and reset form
+      setShowBookingForm(false);
+      setBookingForm({ startDate: '', endDate: '', specialRequests: '' });
+      onClose();
+
+      // Navigate to messages
+      navigate('/owner/messages', { state: { conversationId: conversation.id } });
+    } catch (error) {
+      console.error('❌ Failed to create booking:', error);
+      toast.error('Failed to create booking. Please try again.');
+    } finally {
+      setIsCreatingBooking(false);
+    }
+  };
+
   // Format price display
   const priceDisplay = (() => {
     const parts = [];
@@ -116,6 +217,21 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
     }
     return parts.length > 0 ? parts.join(' or ') : 'Contact for pricing';
   })();
+
+  // Calculate estimated price for booking form
+  const calculateEstimatedPrice = () => {
+    if (!bookingForm.startDate || !bookingForm.endDate || !price_per_day) {
+      return null;
+    }
+
+    const start = new Date(bookingForm.startDate);
+    const end = new Date(bookingForm.endDate);
+
+    if (end <= start) return null;
+
+    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    return (price_per_day * days) / 100;
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -388,8 +504,123 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
                 </div>
               )}
 
+              {/* Booking Form */}
+              {showBookingForm && (
+                <div className="mb-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-indigo-200">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center mr-2">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    Booking Details
+                  </h4>
+
+                  <div className="space-y-4">
+                    {/* Start Date */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Start Date</label>
+                      <input
+                        type="date"
+                        value={bookingForm.startDate}
+                        onChange={(e) => setBookingForm({ ...bookingForm, startDate: e.target.value })}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                      />
+                    </div>
+
+                    {/* End Date */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">End Date</label>
+                      <input
+                        type="date"
+                        value={bookingForm.endDate}
+                        onChange={(e) => setBookingForm({ ...bookingForm, endDate: e.target.value })}
+                        min={bookingForm.startDate || new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                      />
+                    </div>
+
+                    {/* Special Requests */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Special Requests (Optional)
+                      </label>
+                      <textarea
+                        value={bookingForm.specialRequests}
+                        onChange={(e) => setBookingForm({ ...bookingForm, specialRequests: e.target.value })}
+                        rows={3}
+                        placeholder="Any special needs or instructions for your pet..."
+                        className="w-full px-4 py-3 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white resize-none"
+                      />
+                    </div>
+
+                    {/* Estimated Price */}
+                    {calculateEstimatedPrice() && (
+                      <div className="bg-white rounded-lg p-4 border-2 border-green-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-gray-700">Estimated Total</span>
+                          <span className="text-2xl font-bold text-green-600">
+                            ${calculateEstimatedPrice().toFixed(2)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {Math.ceil((new Date(bookingForm.endDate) - new Date(bookingForm.startDate)) / (1000 * 60 * 60 * 24))} days
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Form Actions */}
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        onClick={handleCreateBooking}
+                        disabled={isCreatingBooking || !bookingForm.startDate || !bookingForm.endDate}
+                        className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        {isCreatingBooking ? (
+                          <>
+                            <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Confirm Booking
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowBookingForm(false);
+                          setBookingForm({ startDate: '', endDate: '', specialRequests: '' });
+                        }}
+                        disabled={isCreatingBooking}
+                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex gap-4 pt-6 border-t-2 border-gray-200">
+                <button
+                  onClick={() => setShowBookingForm(!showBookingForm)}
+                  disabled={showBookingForm}
+                  className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Request to Book
+                </button>
                 <button
                   onClick={handleStartConversation}
                   disabled={isStartingConversation}
@@ -408,7 +639,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                      Start Conversation
+                      Message Sitter
                     </>
                   )}
                 </button>

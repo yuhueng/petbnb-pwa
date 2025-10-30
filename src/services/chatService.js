@@ -19,38 +19,11 @@ class ChatService {
   }
 
   /**
-   * Get or create a conversation between owner and sitter
-   * Automatically determines roles based on profiles
+   * Get or create a conversation with explicit owner/sitter roles
+   * Use this when you know exactly who is the owner and who is the sitter
    */
-  async getOrCreateConversation(userId1, userId2) {
-    console.log(`🔍 Getting/creating conversation between ${userId1} and ${userId2}`);
-
-    // Fetch both profiles to determine roles
-    const { data: profiles, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, last_role')
-      .in('id', [userId1, userId2]);
-
-    if (profileError || !profiles || profiles.length !== 2) {
-      throw new Error('Failed to fetch user profiles');
-    }
-
-    // Determine who is owner and who is sitter
-    let ownerId, sitterId;
-    profiles.forEach(profile => {
-      if (profile.last_role === 'owner') {
-        ownerId = profile.id;
-      } else if (profile.last_role === 'sitter') {
-        sitterId = profile.id;
-      }
-    });
-
-    // If both are same role, use current last_role or default
-    if (!ownerId || !sitterId) {
-      // Fallback: first user is owner, second is sitter
-      ownerId = profiles[0].id;
-      sitterId = profiles[1].id;
-    }
+  async getOrCreateConversationExplicit(ownerId, sitterId) {
+    console.log(`🔍 Getting/creating conversation: owner=${ownerId}, sitter=${sitterId}`);
 
     // Check if conversation exists
     const { data: existing, error: fetchError } = await supabase
@@ -82,18 +55,69 @@ class ChatService {
   }
 
   /**
+   * Get or create a conversation between owner and sitter
+   * @deprecated Use getOrCreateConversationExplicit when roles are known
+   */
+  async getOrCreateConversation(userId1, userId2) {
+    console.log(`🔍 Getting/creating conversation between ${userId1} and ${userId2}`);
+
+    // Fetch both profiles to determine roles
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, last_role')
+      .in('id', [userId1, userId2]);
+
+    if (profileError || !profiles || profiles.length !== 2) {
+      throw new Error('Failed to fetch user profiles');
+    }
+
+    // Determine who is owner and who is sitter
+    let ownerId, sitterId;
+    profiles.forEach(profile => {
+      if (profile.last_role === 'owner') {
+        ownerId = profile.id;
+      } else if (profile.last_role === 'sitter') {
+        sitterId = profile.id;
+      }
+    });
+
+    // If both are same role, use current last_role or default
+    if (!ownerId || !sitterId) {
+      // Fallback: first user is owner, second is sitter
+      ownerId = profiles[0].id;
+      sitterId = profiles[1].id;
+    }
+
+    return this.getOrCreateConversationExplicit(ownerId, sitterId);
+  }
+
+  /**
    * Get all conversations for a user
    * Returns conversations with last message and unread count
+   * @param {string} userId - Current user's ID
+   * @param {string} filterByUserRole - Optional: 'owner' or 'sitter' to filter by user's role in conversation
    */
-  async getConversations(userId) {
-    console.log(`📋 Loading conversations for user: ${userId}`);
+  async getConversations(userId, filterByUserRole = null) {
+    console.log(`📋 Loading conversations for user: ${userId}, filtering by user role: ${filterByUserRole}`);
 
-    // Get all conversations where user is either owner or sitter
-    const { data: conversations, error: convError } = await supabase
+    // Build query based on filter
+    let query = supabase
       .from('conversations')
       .select('*')
-      .or(`pet_owner_id.eq.${userId},pet_sitter_id.eq.${userId}`)
       .order('updated_at', { ascending: false });
+
+    if (filterByUserRole === 'owner') {
+      // Show only conversations where current user is the owner
+      query = query.eq('pet_owner_id', userId);
+    } else if (filterByUserRole === 'sitter') {
+      // Show only conversations where current user is the sitter
+      query = query.eq('pet_sitter_id', userId);
+    } else {
+      // Show all conversations where user is either owner or sitter
+      query = query.or(`pet_owner_id.eq.${userId},pet_sitter_id.eq.${userId}`);
+    }
+
+    const { data: conversations, error: convError } = await query;
 
     if (convError) {
       console.error('❌ Error loading conversations:', convError);
@@ -114,10 +138,13 @@ class ChatService {
         const otherUserId =
           conv.pet_owner_id === userId ? conv.pet_sitter_id : conv.pet_owner_id;
 
+        // Determine the other participant's role based on conversation structure
+        const otherParticipantRole = conv.pet_owner_id === userId ? 'sitter' : 'owner';
+
         // Get other participant's profile
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, name, avatar_url')
+          .select('id, name, avatar_url, last_role')
           .eq('id', otherUserId)
           .single();
 
@@ -140,7 +167,10 @@ class ChatService {
 
         return {
           id: conv.id,
-          otherParticipant: profile,
+          otherParticipant: {
+            ...profile,
+            role: otherParticipantRole, // Add the role based on conversation structure
+          },
           lastMessage: lastMessageData || null,
           unreadCount: unreadCount || 0,
           updated_at: conv.updated_at,
@@ -173,17 +203,22 @@ class ChatService {
   /**
    * Send a message in a conversation
    */
-  async sendMessage({ conversationId, senderId, content, bookingId = null }) {
+  async sendMessage({ conversationId, senderId, content, metadata = null }) {
+    const messageData = {
+      conversation_id: conversationId,
+      sender_id: senderId,
+      content,
+      is_read: false,
+    };
+
+    // Add metadata if provided (for booking requests, etc.)
+    if (metadata) {
+      messageData.metadata = metadata;
+    }
+
     const { data, error } = await supabase
       .from('messages')
-      .insert([
-        {
-          conversation_id: conversationId,
-          sender_id: senderId,
-          content,
-          is_read: false,
-        },
-      ])
+      .insert([messageData])
       .select(`
         *,
         sender:profiles!sender_id(id, name, avatar_url)

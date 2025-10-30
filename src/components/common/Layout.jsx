@@ -72,7 +72,7 @@ const Layout = () => {
               {isAuthenticated ? (
                 <button
                   onClick={handleRoleSwitch}
-                  className="px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-md hover:bg-primary-100"
+                  className="px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 border-2 rounded-md hover:bg-gray-100"
                 >
                   Switch to {activeRole === USER_ROLES.OWNER ? 'Sitter' : 'Owner'}
                 </button>

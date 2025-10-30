@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { getInitials } from '@/utils/helpers';
+import BookingRequestCard from '@/components/common/BookingRequestCard';
 
 const ChatInterface = ({
   conversation,
@@ -143,6 +144,27 @@ const ChatInterface = ({
               index === 0 ||
               messages[index - 1].sender_id !== message.sender_id;
 
+            // Check if this is a booking request message
+            const isBookingRequest = message.metadata &&
+              (message.metadata.type === 'booking_request' || message.metadata.bookingId);
+
+            // If it's a booking request, render BookingRequestCard
+            if (isBookingRequest && message.metadata.bookingId) {
+              return (
+                <div key={message.id} className="w-full">
+                  <BookingRequestCard
+                    bookingId={message.metadata.bookingId}
+                    currentUserId={currentUserId}
+                    conversationId={conversation.id}
+                  />
+                  <p className="text-xs text-gray-500 mt-2 text-center font-medium">
+                    {format(new Date(message.created_at), 'h:mm a')}
+                  </p>
+                </div>
+              );
+            }
+
+            // Regular message bubble
             return (
               <div
                 key={message.id}

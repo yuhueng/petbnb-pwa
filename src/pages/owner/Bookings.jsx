@@ -19,6 +19,18 @@ const Bookings = () => {
     }
   }, [isAuthenticated, user, fetchOwnerBookings]);
 
+  // Refresh bookings when page gains focus (to see sitter's updates)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isAuthenticated && user) {
+        fetchOwnerBookings(user.id);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [isAuthenticated, user, fetchOwnerBookings]);
+
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -239,13 +251,13 @@ const Bookings = () => {
         <div className="flex gap-3 mb-6 bg-white p-2 rounded-xl shadow-md inline-flex">
           <button
             onClick={() => setActiveTab('current')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+            className={`min-w-[160px] px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
               activeTab === 'current'
                 ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -254,13 +266,13 @@ const Bookings = () => {
           </button>
           <button
             onClick={() => setActiveTab('past')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+            className={`min-w-[160px] px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
               activeTab === 'past'
                 ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -273,25 +285,6 @@ const Bookings = () => {
         {isLoading && (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && bookings.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">No bookings yet</h3>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">Start your pet care journey by exploring amazing pet sitters in your area</p>
-            <button
-              onClick={() => navigate('/owner/explore')}
-              className="px-8 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              Explore Sitters
-            </button>
           </div>
         )}
 

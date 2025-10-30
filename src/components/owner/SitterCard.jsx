@@ -29,8 +29,10 @@
  * @param {Object} props
  * @param {Listing} props.listing - The listing data
  * @param {Function} props.onClick - Click handler for the card
+ * @param {boolean} props.isInWishlist - Whether listing is in wishlist
+ * @param {Function} props.onToggleWishlist - Handler for wishlist toggle
  */
-const SitterCard = ({ listing, onClick }) => {
+const SitterCard = ({ listing, onClick, isInWishlist = false, onToggleWishlist }) => {
   const {
     title,
     description,
@@ -66,8 +68,34 @@ const SitterCard = ({ listing, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer overflow-hidden"
+      className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer overflow-hidden relative"
     >
+      {/* Wishlist Heart Button */}
+      {onToggleWishlist && (
+        <button
+          onClick={onToggleWishlist}
+          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group"
+          aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+        >
+          <svg
+            className={`w-6 h-6 transition-all duration-200 ${
+              isInWishlist
+                ? 'fill-red-500 text-red-500'
+                : 'fill-none text-gray-400 group-hover:text-red-500'
+            }`}
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
+          </svg>
+        </button>
+      )}
+
       {/* Card Header - Sitter Info */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center space-x-3">

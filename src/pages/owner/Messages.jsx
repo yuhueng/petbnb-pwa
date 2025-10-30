@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { chatService } from '@/services/chatService';
 import ConversationList from '@/components/common/ConversationList';
 import ChatInterface from '@/components/common/ChatInterface';
+import ProfileModal from '@/components/common/ProfileModal';
 import toast from 'react-hot-toast';
 
 const OwnerMessages = () => {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+  const [profileUserId, setProfileUserId] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // If not authenticated, show login prompt
   if (!isAuthenticated) {
@@ -50,6 +54,22 @@ const OwnerMessages = () => {
 
     loadConversations();
   }, [user?.id]);
+
+  // Auto-select conversation if conversationId is passed via navigation state
+  useEffect(() => {
+    if (!location.state?.conversationId || conversations.length === 0) return;
+
+    // Find the conversation with the passed ID
+    const targetConversation = conversations.find(
+      (conv) => conv.id === location.state.conversationId
+    );
+
+    if (targetConversation) {
+      setSelectedConversation(targetConversation);
+      // Clear the location state to prevent re-selection on re-render
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [conversations, location.state?.conversationId]);
 
   // Load messages when conversation is selected
   useEffect(() => {
@@ -141,6 +161,16 @@ const OwnerMessages = () => {
     setSelectedConversation(null);
   };
 
+  const handleProfileClick = (userId) => {
+    setProfileUserId(userId);
+    setIsProfileModalOpen(true);
+  };
+
+  const handleCloseProfileModal = () => {
+    setIsProfileModalOpen(false);
+    setProfileUserId(null);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -161,6 +191,7 @@ const OwnerMessages = () => {
               currentUserId={user?.id}
               onSendMessage={handleSendMessage}
               onBack={handleBack}
+              onProfileClick={handleProfileClick}
             />
           </div>
         </div>
@@ -221,18 +252,26 @@ const OwnerMessages = () => {
             </div>
 
             {/* Chat Interface */}
-            <div className="col-span-2">
+            <div className="col-span-2 h-full">
               <ChatInterface
                 conversation={selectedConversation}
                 messages={messages}
                 currentUserId={user?.id}
                 onSendMessage={handleSendMessage}
                 onBack={handleBack}
+                onProfileClick={handleProfileClick}
               />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Profile Modal */}
+      <ProfileModal
+        userId={profileUserId}
+        isOpen={isProfileModalOpen}
+        onClose={handleCloseProfileModal}
+      />
     </div>
   );
 };

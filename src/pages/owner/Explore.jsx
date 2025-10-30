@@ -3,7 +3,10 @@ import { useListingStore } from '@/store/listingStore';
 import { useAuthStore } from '@/store/authStore';
 import SitterCard from '@/components/owner/SitterCard';
 import ListingDetailModal from '@/components/owner/ListingDetailModal';
+import ProfileModal from '@/components/common/ProfileModal';
 import { parseSearchQuery, convertToListingFilters } from '@/services/aiSearchService';
+import { wishlistService } from '@/services/wishlistService';
+import toast from 'react-hot-toast';
 
 const Explore = () => {
   const { listings, isLoading, error, fetchListings } = useListingStore();
@@ -20,12 +23,28 @@ const Explore = () => {
   const [aiSearching, setAiSearching] = useState(false);
   const [aiUnderstanding, setAiUnderstanding] = useState(null);
   const [aiParsedCriteria, setAiParsedCriteria] = useState(null);
+  const [wishlistIds, setWishlistIds] = useState(new Set());
+  const [profileUserId, setProfileUserId] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Fetch listings on mount, excluding current user's listings
   useEffect(() => {
     const initialFilters = user ? { excludeUserId: user.id } : {};
     fetchListings(initialFilters);
   }, [fetchListings, user]);
+
+  // Fetch wishlist IDs on mount
+  useEffect(() => {
+    if (user) {
+      loadWishlistIds();
+    }
+  }, [user]);
+
+  const loadWishlistIds = async () => {
+    if (!user) return;
+    const ids = await wishlistService.getWishlistIds(user.id);
+    setWishlistIds(ids);
+  };
 
   // Handle AI-powered search
   const handleSearch = async (e) => {
@@ -119,6 +138,49 @@ const Explore = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedListing(null);
+  };
+
+  const handleProfileClick = (userId) => {
+    setProfileUserId(userId);
+    setIsProfileModalOpen(true);
+  };
+
+  const handleCloseProfileModal = () => {
+    setIsProfileModalOpen(false);
+    setProfileUserId(null);
+  };
+
+  const handleToggleWishlist = async (e, listingId) => {
+    e.stopPropagation(); // Prevent card click
+
+    if (!user) {
+      toast.error('Please log in to save favorites');
+      return;
+    }
+
+    const result = await wishlistService.toggleWishlist(user.id, listingId);
+
+    if (result.success) {
+      // Update local wishlist state
+      setWishlistIds((prev) => {
+        const newSet = new Set(prev);
+        if (result.isInWishlist) {
+          newSet.add(listingId);
+        } else {
+          newSet.delete(listingId);
+        }
+        return newSet;
+      });
+
+      // Show toast after state update
+      if (result.isInWishlist) {
+        toast.success('Added to wishlist! ❤️');
+      } else {
+        toast.success('Removed from wishlist');
+      }
+    } else {
+      toast.error(result.error || 'Failed to update wishlist');
+    }
   };
 
   return (
@@ -425,6 +487,8 @@ const Explore = () => {
                 key={listing.id}
                 listing={listing}
                 onClick={() => handleListingClick(listing)}
+                isInWishlist={wishlistIds.has(listing.id)}
+                onToggleWishlist={(e) => handleToggleWishlist(e, listing.id)}
               />
             ))}
           </div>
@@ -436,6 +500,14 @@ const Explore = () => {
         listing={selectedListing}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+        onProfileClick={handleProfileClick}
+      />
+
+      {/* Profile Modal */}
+      <ProfileModal
+        userId={profileUserId}
+        isOpen={isProfileModalOpen}
+        onClose={handleCloseProfileModal}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore';
 import { chatService } from '@/services/chatService';
 import ConversationList from '@/components/common/ConversationList';
 import ChatInterface from '@/components/common/ChatInterface';
+import ProfileModal from '@/components/common/ProfileModal';
 import toast from 'react-hot-toast';
 
 const SitterMessages = () => {
@@ -14,6 +15,8 @@ const SitterMessages = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+  const [profileUserId, setProfileUserId] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // If not authenticated, show login prompt
   if (!isAuthenticated) {
@@ -141,6 +144,16 @@ const SitterMessages = () => {
     setSelectedConversation(null);
   };
 
+  const handleProfileClick = (userId) => {
+    setProfileUserId(userId);
+    setIsProfileModalOpen(true);
+  };
+
+  const handleCloseProfileModal = () => {
+    setIsProfileModalOpen(false);
+    setProfileUserId(null);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -161,6 +174,7 @@ const SitterMessages = () => {
               currentUserId={user?.id}
               onSendMessage={handleSendMessage}
               onBack={handleBack}
+              onProfileClick={handleProfileClick}
             />
           </div>
         </div>
@@ -221,18 +235,26 @@ const SitterMessages = () => {
             </div>
 
             {/* Chat Interface */}
-            <div className="col-span-2">
+            <div className="col-span-2 h-full">
               <ChatInterface
                 conversation={selectedConversation}
                 messages={messages}
                 currentUserId={user?.id}
                 onSendMessage={handleSendMessage}
                 onBack={handleBack}
+                onProfileClick={handleProfileClick}
               />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Profile Modal */}
+      <ProfileModal
+        userId={profileUserId}
+        isOpen={isProfileModalOpen}
+        onClose={handleCloseProfileModal}
+      />
     </div>
   );
 };

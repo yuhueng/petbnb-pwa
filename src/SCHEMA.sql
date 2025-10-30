@@ -276,6 +276,25 @@ CREATE INDEX idx_certifications_verified ON certifications(is_verified);
 CREATE INDEX idx_certifications_expiry ON certifications(expiry_date);
 
 -- ============================================
+-- 9. WISHLISTS (Linked to profiles - owners save favorite listings)
+-- ============================================
+
+CREATE TABLE wishlists (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  listing_id UUID NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+
+  -- Ensure one wishlist entry per owner per listing
+  UNIQUE(owner_id, listing_id)
+);
+
+CREATE INDEX idx_wishlists_owner ON wishlists(owner_id);
+CREATE INDEX idx_wishlists_listing ON wishlists(listing_id);
+CREATE INDEX idx_wishlists_created ON wishlists(created_at DESC);
+
+-- ============================================
 -- TRIGGERS - Auto-update timestamps
 -- ============================================
 
@@ -349,6 +368,7 @@ ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE certifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE wishlists ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- RLS POLICIES
@@ -489,5 +509,18 @@ CREATE POLICY "Sitters can update own certifications"
   USING (auth.uid() = sitter_id);
 
 CREATE POLICY "Sitters can delete own certifications"
-  ON certifications FOR DELETE 
+  ON certifications FOR DELETE
   USING (auth.uid() = sitter_id);
+
+-- WISHLISTS: Owners manage their own wishlists
+CREATE POLICY "Users can view their own wishlist"
+  ON wishlists FOR SELECT
+  USING (auth.uid() = owner_id);
+
+CREATE POLICY "Users can add to their wishlist"
+  ON wishlists FOR INSERT
+  WITH CHECK (auth.uid() = owner_id);
+
+CREATE POLICY "Users can remove from their wishlist"
+  ON wishlists FOR DELETE
+  USING (auth.uid() = owner_id);

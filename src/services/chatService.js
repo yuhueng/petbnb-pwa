@@ -202,8 +202,14 @@ class ChatService {
 
   /**
    * Send a message in a conversation
+   * @param {Object} params
+   * @param {string} params.conversationId - ID of the conversation
+   * @param {string} params.senderId - ID of the sender
+   * @param {string} params.content - Text content of the message
+   * @param {string} params.attachmentUrl - Optional URL of attached file
+   * @param {Object} params.metadata - Optional metadata (for booking requests, file info, etc.)
    */
-  async sendMessage({ conversationId, senderId, content, metadata = null }) {
+  async sendMessage({ conversationId, senderId, content, attachmentUrl = null, metadata = null }) {
     const messageData = {
       conversation_id: conversationId,
       sender_id: senderId,
@@ -211,7 +217,12 @@ class ChatService {
       is_read: false,
     };
 
-    // Add metadata if provided (for booking requests, etc.)
+    // Add attachment URL if provided
+    if (attachmentUrl) {
+      messageData.attachment_url = attachmentUrl;
+    }
+
+    // Add metadata if provided (for booking requests, file attachments, etc.)
     if (metadata) {
       messageData.metadata = metadata;
     }

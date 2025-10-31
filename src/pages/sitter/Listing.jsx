@@ -18,6 +18,12 @@ const Listing = () => {
   } = useListingStore();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [editingListingId, setEditingListingId] = useState(null); // Track which listing is being edited
+  const [pricingType, setPricingType] = useState('per_day'); // 'per_day' or 'per_hour'
+  const [coverImage, setCoverImage] = useState(null); // Cover image file
+  const [coverImagePreview, setCoverImagePreview] = useState(null); // Preview URL
+  const [isUploadingImage, setIsUploadingImage] = useState(false); // Upload state
+  const fileInputRef = useState(null); // Reference to file input
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -99,6 +105,41 @@ const Listing = () => {
     });
   };
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please select a valid image file (PNG, JPG, GIF, or WEBP)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5 MB');
+      return;
+    }
+
+    setCoverImage(file);
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setCoverImagePreview(previewUrl);
+  };
+
+  const handleRemoveImage = () => {
+    if (coverImagePreview) {
+      URL.revokeObjectURL(coverImagePreview);
+    }
+    setCoverImage(null);
+    setCoverImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -123,36 +164,103 @@ const Listing = () => {
       return;
     }
 
+    // Validate pricing based on selected pricing type
+    if (pricingType === 'per_day' && !formData.price_per_day) {
+      alert('Please enter a price per day');
+      return;
+    }
+
+    if (pricingType === 'per_hour' && !formData.price_per_hour) {
+      alert('Please enter a price per hour');
+      return;
+    }
+
+    // Validate that the price is a valid number
+    const priceValue = pricingType === 'per_day' ? formData.price_per_day : formData.price_per_hour;
+    if (isNaN(parseFloat(priceValue)) || parseFloat(priceValue) <= 0) {
+      alert('Please enter a valid price greater than 0');
+      return;
+    }
+
+    // Upload cover image if selected
+    let coverImageUrl = null;
+    if (coverImage) {
+      setIsUploadingImage(true);
+      try {
+        const { listingImageService } = await import('@/services/listingImageService');
+
+        // For new listings, create a temporary ID; for edits, use existing ID
+        const tempListingId = editingListingId || `temp-${Date.now()}`;
+
+        const uploadResult = await listingImageService.uploadCoverImage(coverImage, tempListingId);
+
+        if (!uploadResult.success) {
+          alert(`Failed to upload image: ${uploadResult.error}`);
+          setIsUploadingImage(false);
+          return;
+        }
+
+        coverImageUrl = uploadResult.url;
+      } catch (error) {
+        console.error('Image upload error:', error);
+        alert('Failed to upload image. Please try again.');
+        setIsUploadingImage(false);
+        return;
+      } finally {
+        setIsUploadingImage(false);
+      }
+    }
+
     // Prepare data
     const listingData = {
       ...formData,
-      // Convert prices to cents (integer)
-      price_per_day: formData.price_per_day ? Math.round(parseFloat(formData.price_per_day) * 100) : null,
-      price_per_hour: formData.price_per_hour ? Math.round(parseFloat(formData.price_per_hour) * 100) : null,
+      // Convert prices to cents (integer) based on selected pricing type
+      price_per_day: pricingType === 'per_day' && formData.price_per_day
+        ? Math.round(parseFloat(formData.price_per_day) * 100)
+        : null,
+      price_per_hour: pricingType === 'per_hour' && formData.price_per_hour
+        ? Math.round(parseFloat(formData.price_per_hour) * 100)
+        : null,
       max_pets: parseInt(formData.max_pets),
       // Set dates or null
       available_from: formData.available_from || null,
       available_to: formData.available_to || null,
+      // Add cover image URL if uploaded
+      cover_image_url: coverImageUrl || formData.cover_image_url || null,
     };
 
     let result;
-    if (isEditing && currentListing) {
-      result = await updateListing(currentListing.id, listingData);
+    if (editingListingId) {
+      result = await updateListing(editingListingId, listingData);
     } else {
       result = await createListing(user.id, listingData);
     }
 
     if (result.success) {
-      alert(isEditing ? 'Listing updated successfully!' : 'Listing created successfully!');
+      alert(editingListingId ? 'Listing updated successfully!' : 'Listing created successfully!');
       resetForm();
       fetchMyListings(user.id);
     } else {
-      alert(`Failed to ${isEditing ? 'update' : 'create'} listing: ${result.error}`);
+      alert(`Failed to ${editingListingId ? 'update' : 'create'} listing: ${result.error}`);
     }
   };
 
   const handleEdit = (listing) => {
     setIsEditing(true);
+    setEditingListingId(listing.id); // Set the ID of the listing being edited
+
+    // Detect which pricing type the listing uses
+    if (listing.price_per_day) {
+      setPricingType('per_day');
+    } else if (listing.price_per_hour) {
+      setPricingType('per_hour');
+    }
+
+    // Load existing image if available
+    if (listing.cover_image_url) {
+      setCoverImagePreview(listing.cover_image_url);
+    }
+
     setFormData({
       title: listing.title || '',
       description: listing.description || '',
@@ -171,6 +279,7 @@ const Listing = () => {
       cancellation_policy: listing.cancellation_policy || '',
       available_from: listing.available_from || '',
       available_to: listing.available_to || '',
+      cover_image_url: listing.cover_image_url || '',
     });
   };
 
@@ -200,6 +309,20 @@ const Listing = () => {
 
   const resetForm = () => {
     setIsEditing(false);
+    setEditingListingId(null); // Clear the editing ID
+    setPricingType('per_day'); // Reset to default pricing type
+
+    // Clear image state
+    if (coverImagePreview && !formData.cover_image_url) {
+      // Only revoke if it's a local blob URL, not an existing image URL
+      URL.revokeObjectURL(coverImagePreview);
+    }
+    setCoverImage(null);
+    setCoverImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
     setFormData({
       title: '',
       description: '',
@@ -299,7 +422,7 @@ const Listing = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </div>
-                  {isEditing ? 'Edit Listing' : 'Create New Listing'}
+                  {editingListingId ? 'Edit Listing' : 'Create New Listing'}
                 </h2>
                 <p className="text-indigo-100 mt-2 text-sm">Fill in the details about your pet sitting services</p>
               </div>
@@ -349,6 +472,64 @@ const Listing = () => {
                 required
               />
               <p className="mt-2 text-xs text-gray-500">Make it engaging and informative for potential clients</p>
+            </div>
+
+            {/* Cover Image Upload */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Cover Image
+                <span className="text-gray-500 font-normal ml-2">(Recommended)</span>
+              </label>
+
+              {/* Image Preview or Upload Button */}
+              {coverImagePreview ? (
+                <div className="relative">
+                  <img
+                    src={coverImagePreview}
+                    alt="Cover preview"
+                    className="w-full h-64 object-cover rounded-xl border-2 border-gray-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-64 border-2 border-dashed border-gray-300 rounded-xl hover:border-indigo-400 hover:bg-indigo-50/50 transition-all flex flex-col items-center justify-center gap-3 group"
+                  >
+                    <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                      <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors">
+                        Click to upload cover image
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF or WEBP (max 5MB)</p>
+                    </div>
+                  </button>
+                </div>
+              )}
+              <p className="mt-2 text-xs text-gray-500">
+                A great cover image helps attract more bookings. Show your space or happy pets you've cared for!
+              </p>
             </div>
           </div>
 
@@ -448,48 +629,66 @@ const Listing = () => {
               />
             </div>
 
-            {/* Pricing */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Price per Day ($)
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <span className="text-gray-500 text-lg">$</span>
-                  </div>
+            {/* Pricing Type Selection */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Pricing Type <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-4 mb-4">
+                <label className="relative flex items-center p-4 cursor-pointer border-2 rounded-xl hover:border-green-300 hover:bg-green-50/50 transition-all group flex-1">
                   <input
-                    type="number"
-                    name="price_per_day"
-                    value={formData.price_per_day}
-                    onChange={handleInputChange}
-                    step="0.01"
-                    min="0"
-                    className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                    placeholder="50.00"
+                    type="radio"
+                    name="pricingType"
+                    value="per_day"
+                    checked={pricingType === 'per_day'}
+                    onChange={(e) => setPricingType(e.target.value)}
+                    className="w-5 h-5 text-green-600 border-gray-300 focus:ring-green-500"
                   />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Price per Hour ($)
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <span className="text-gray-500 text-lg">$</span>
+                  <div className="ml-3">
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-green-700 block">Per Day</span>
+                    <span className="text-xs text-gray-500">Charge by daily rate</span>
                   </div>
+                </label>
+                <label className="relative flex items-center p-4 cursor-pointer border-2 rounded-xl hover:border-green-300 hover:bg-green-50/50 transition-all group flex-1">
                   <input
-                    type="number"
-                    name="price_per_hour"
-                    value={formData.price_per_hour}
-                    onChange={handleInputChange}
-                    step="0.01"
-                    min="0"
-                    className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                    placeholder="10.00"
+                    type="radio"
+                    name="pricingType"
+                    value="per_hour"
+                    checked={pricingType === 'per_hour'}
+                    onChange={(e) => setPricingType(e.target.value)}
+                    className="w-5 h-5 text-green-600 border-gray-300 focus:ring-green-500"
                   />
-                </div>
+                  <div className="ml-3">
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-green-700 block">Per Hour</span>
+                    <span className="text-xs text-gray-500">Charge by hourly rate</span>
+                  </div>
+                </label>
               </div>
+            </div>
+
+            {/* Price Input (based on selected pricing type) */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {pricingType === 'per_day' ? 'Price per Day ($)' : 'Price per Hour ($)'}
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <span className="text-gray-500 text-lg">$</span>
+                </div>
+                <input
+                  type="text"
+                  name={pricingType === 'per_day' ? 'price_per_day' : 'price_per_hour'}
+                  value={pricingType === 'per_day' ? formData.price_per_day : formData.price_per_hour}
+                  onChange={handleInputChange}
+                  className="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder={pricingType === 'per_day' ? '50.00' : '10.00'}
+                  required
+                />
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Enter the {pricingType === 'per_day' ? 'daily' : 'hourly'} rate for your services
+              </p>
             </div>
           </div>
 
@@ -670,10 +869,18 @@ const Listing = () => {
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isUploadingImage}
               className="flex-1 px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {isUploadingImage ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Uploading Image...
+                </>
+              ) : isLoading ? (
                 <>
                   <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -686,7 +893,7 @@ const Listing = () => {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  {isEditing ? 'Update Listing' : 'Create Listing'}
+                  {editingListingId ? 'Update Listing' : 'Create Listing'}
                 </>
               )}
             </button>
@@ -724,144 +931,148 @@ const Listing = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {myListings.map((listing) => (
-                <div
-                  key={listing.id}
-                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200"
-                >
-                  {/* Card Header with Gradient */}
-                  <div className="relative bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6">
-                    <div className="absolute top-0 right-0 left-0 h-full bg-gradient-to-b from-transparent to-black/10"></div>
-                    <div className="relative">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-white line-clamp-2 mb-2">{listing.title}</h3>
-                          <div className="flex items-center gap-1.5 text-white/90">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {myListings.map((listing) => {
+                // Get location for display
+                const location = listing.city && listing.state
+                  ? `${listing.city}, ${listing.state}`
+                  : 'Location not set';
+
+                // Get primary service
+                const primaryService = listing.service_type?.[0]?.replace(/_/g, ' ') || 'Pet Care';
+
+                // Calculate price display
+                const priceDisplay = (() => {
+                  if (listing.price_per_day) {
+                    return {
+                      value: (listing.price_per_day / 100).toFixed(0),
+                      unit: 'day',
+                    };
+                  }
+                  if (listing.price_per_hour) {
+                    return {
+                      value: (listing.price_per_hour / 100).toFixed(0),
+                      unit: 'hour',
+                    };
+                  }
+                  return null;
+                })();
+
+                // Determine image source
+                const cardImage = listing.cover_image_url || listing.image_urls?.[0];
+
+                // Get gradient for service type
+                const getPlaceholderGradient = () => {
+                  const gradients = {
+                    boarding: 'from-blue-400 to-indigo-600',
+                    daycare: 'from-green-400 to-emerald-600',
+                    walking: 'from-amber-400 to-orange-600',
+                    grooming: 'from-purple-400 to-pink-600',
+                    default: 'from-gray-400 to-gray-600',
+                  };
+                  return gradients[listing.service_type?.[0]] || gradients.default;
+                };
+
+                return (
+                  <div key={listing.id} className="group">
+                    <div className="relative overflow-hidden rounded-xl">
+                      {/* Image Section */}
+                      <div className="relative aspect-[4/3] overflow-hidden bg-gray-200">
+                        {cardImage ? (
+                          <img
+                            src={cardImage}
+                            alt={listing.title}
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className={`absolute inset-0 bg-gradient-to-br ${getPlaceholderGradient()} flex items-center justify-center`}>
+                            <svg className="w-16 h-16 text-white opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                              />
                             </svg>
-                            <span className="text-sm font-medium">
-                              {listing.city && listing.state
-                                ? `${listing.city}, ${listing.state}`
-                                : 'No location set'}
-                            </span>
                           </div>
-                        </div>
-                        <span
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg ${
+                        )}
+
+                        {/* Status Badge */}
+                        <div className="absolute top-3 right-3 z-10">
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
                             listing.is_active
-                              ? 'bg-green-400 text-green-900'
-                              : 'bg-gray-200 text-gray-700'
-                          }`}
-                        >
-                          {listing.is_active ? '● Active' : '○ Inactive'}
-                        </span>
+                              ? 'bg-green-500/90 text-white'
+                              : 'bg-gray-500/90 text-white'
+                          }`}>
+                            {listing.is_active ? '● Active' : '○ Inactive'}
+                          </span>
+                        </div>
+
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
                       </div>
 
-                      {/* Pet Types Accepted */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {listing.accepted_pet_types?.slice(0, 4).map((pet) => (
-                          <span
-                            key={pet}
-                            className="px-2.5 py-1 bg-white/20 backdrop-blur-sm text-white text-xs rounded-full font-medium border border-white/30"
+                      {/* Info Section */}
+                      <div className="pt-3">
+                        {/* Location & Title */}
+                        <h3 className="text-sm font-semibold text-gray-900 truncate">
+                          {location}
+                        </h3>
+                        <p className="text-sm text-gray-600 truncate mt-0.5">
+                          {listing.title}
+                        </p>
+                        <p className="text-sm text-gray-500 capitalize mt-0.5">
+                          {primaryService}
+                        </p>
+
+                        {/* Price */}
+                        <div className="mt-2">
+                          {priceDisplay ? (
+                            <p className="text-sm">
+                              <span className="font-semibold text-gray-900">${priceDisplay.value}</span>
+                              <span className="text-gray-600"> / {priceDisplay.unit}</span>
+                            </p>
+                          ) : (
+                            <p className="text-sm text-gray-500">Price upon request</p>
+                          )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="grid grid-cols-3 gap-2 mt-4">
+                          <button
+                            onClick={() => handleEdit(listing)}
+                            className="px-3 py-2 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center justify-center gap-1"
                           >
-                            {pet === 'dog' && '🐕'} {pet === 'cat' && '🐈'} {pet === 'bird' && '🐦'} {pet === 'rabbit' && '🐰'} {pet === 'hamster' && '🐹'} {pet === 'other' && '🐾'}
-                          </span>
-                        ))}
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleToggleStatus(listing.id, listing.is_active)}
+                            className={`px-3 py-2 text-xs rounded-lg transition-colors font-medium ${
+                              listing.is_active
+                                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            }`}
+                          >
+                            {listing.is_active ? 'Pause' : 'Activate'}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(listing.id)}
+                            className="px-3 py-2 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition-colors font-medium flex items-center justify-center gap-1"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* Card Body */}
-                  <div className="p-6">
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">{listing.description}</p>
-
-                    {/* Services */}
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Services Offered</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {listing.service_type?.map((service) => (
-                          <span
-                            key={service}
-                            className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs rounded-lg font-medium border border-indigo-100 capitalize"
-                          >
-                            {service.replace(/_/g, ' ')}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Pricing Section */}
-                    {(listing.price_per_day || listing.price_per_hour) && (
-                      <div className="mb-5 pt-4 border-t border-gray-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Pricing</p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          {listing.price_per_day && (
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-2xl font-bold text-gray-900">
-                                ${(listing.price_per_day / 100).toFixed(0)}
-                              </span>
-                              <span className="text-sm text-gray-500">/day</span>
-                            </div>
-                          )}
-                          {listing.price_per_hour && (
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-2xl font-bold text-gray-900">
-                                ${(listing.price_per_hour / 100).toFixed(0)}
-                              </span>
-                              <span className="text-sm text-gray-500">/hour</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        onClick={() => handleEdit(listing)}
-                        className="px-4 py-2.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center justify-center gap-1.5"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleToggleStatus(listing.id, listing.is_active)}
-                        className={`px-4 py-2.5 text-sm rounded-lg transition-colors font-medium ${
-                          listing.is_active
-                            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
-                      >
-                        {listing.is_active ? 'Pause' : 'Activate'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(listing.id)}
-                        className="px-4 py-2.5 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100 transition-colors font-medium flex items-center justify-center gap-1.5"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -20,12 +20,14 @@
  * @property {string} city
  * @property {string} state
  * @property {string[]} amenities
+ * @property {string} cover_image_url
+ * @property {string[]} image_urls
  * @property {Profile} profiles
  */
 
 /**
- * SitterCard Component
- * Displays a pet sitter listing card with key information
+ * SitterCard Component - Airbnb Style
+ * Displays a pet sitter listing card with large image and minimal info
  * @param {Object} props
  * @param {Listing} props.listing - The listing data
  * @param {Function} props.onClick - Click handler for the card
@@ -35,216 +37,155 @@
 const SitterCard = ({ listing, onClick, isInWishlist = false, onToggleWishlist }) => {
   const {
     title,
-    description,
     service_type,
-    accepted_pet_types,
     price_per_day,
     price_per_hour,
     city,
     state,
-    amenities,
+    cover_image_url,
+    image_urls,
     profiles,
   } = listing;
 
-  // Get sitter profile info
-  const sitterName = profiles?.name || 'Unknown Sitter';
-  const sitterAvatar = profiles?.avatar_url;
-  const sitterLocation = profiles?.location || (city && state ? `${city}, ${state}` : 'Location not specified');
+  // Get location for display
+  const location = city && state ? `${city}, ${state}` : profiles?.location || 'Location not specified';
 
-  // Format service types for display
-  const serviceTypesDisplay = service_type?.slice(0, 3).join(', ') || 'No services';
+  // Get primary service (first one)
+  const primaryService = service_type?.[0]?.replace(/_/g, ' ') || 'Pet Care';
 
-  // Format pet types for display
-  const petTypesDisplay = accepted_pet_types?.slice(0, 3).join(', ') || 'No pets';
-
-  // Calculate price display (match modal logic)
+  // Calculate price display (prefer daily rate)
   const priceDisplay = (() => {
-    const parts = [];
     if (price_per_day) {
-      parts.push({ value: price_per_day / 100, unit: 'day' });
+      return {
+        value: (price_per_day / 100).toFixed(0),
+        unit: 'day',
+      };
     }
     if (price_per_hour) {
-      parts.push({ value: price_per_hour / 100, unit: 'hour' });
-    }
-
-    // Show the first available price (prefer daily)
-    if (parts.length > 0) {
-      return parts[0];
+      return {
+        value: (price_per_hour / 100).toFixed(0),
+        unit: 'hour',
+      };
     }
     return null;
   })();
 
+  // Determine which image to use (priority: cover_image_url > first gallery image > sitter avatar > placeholder)
+  const cardImage = cover_image_url || image_urls?.[0] || profiles?.avatar_url;
+
+  // Generate placeholder based on service type if no image
+  const getPlaceholderGradient = () => {
+    const gradients = {
+      boarding: 'from-blue-400 to-indigo-600',
+      daycare: 'from-green-400 to-emerald-600',
+      walking: 'from-amber-400 to-orange-600',
+      grooming: 'from-purple-400 to-pink-600',
+      default: 'from-gray-400 to-gray-600',
+    };
+    return gradients[service_type?.[0]] || gradients.default;
+  };
+
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer overflow-hidden relative"
+      className="group cursor-pointer"
     >
-      {/* Wishlist Heart Button */}
-      {onToggleWishlist && (
-        <button
-          onClick={onToggleWishlist}
-          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center group"
-          aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-        >
-          <svg
-            className={`w-6 h-6 transition-all duration-200 ${
-              isInWishlist
-                ? 'fill-red-500 text-red-500'
-                : 'fill-none text-gray-400 group-hover:text-red-500'
-            }`}
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+      <div className="relative overflow-hidden rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
+        {/* Image Section */}
+        <div className="relative aspect-[4/3] overflow-hidden bg-gray-200">
+          {cardImage ? (
+            <img
+              src={cardImage}
+              alt={title || 'Pet sitting service'}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => {
+                // Fallback to gradient on image error
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
             />
-          </svg>
-        </button>
-      )}
+          ) : null}
 
-      {/* Card Header - Sitter Info */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          {/* Avatar */}
-          <div className="flex-shrink-0">
-            {sitterAvatar ? (
-              <img
-                src={sitterAvatar}
-                alt={sitterName}
-                className="w-12 h-12 rounded-full object-cover"
+          {/* Placeholder gradient (shown if no image or image fails) */}
+          <div
+            className={`absolute inset-0 bg-gradient-to-br ${getPlaceholderGradient()} flex items-center justify-center ${
+              cardImage ? 'hidden' : 'flex'
+            }`}
+            style={{ display: cardImage ? 'none' : 'flex' }}
+          >
+            <svg className="w-16 h-16 text-white opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
               />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                <span className="text-text-info font-semibold text-lg">
-                  {sitterName.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            )}
+            </svg>
           </div>
 
-          {/* Sitter Details */}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-text-primary truncate">{sitterName}</h3>
-            <p className="text-sm text-text-secondary flex items-center">
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+
+          {/* Wishlist Heart Button */}
+          {onToggleWishlist && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWishlist(e);
+              }}
+              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:shadow-lg hover:scale-110 transition-all duration-200 flex items-center justify-center group/heart"
+              aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            >
               <svg
-                className="w-4 h-4 mr-1 text-gray-400"
-                fill="none"
+                className={`w-5 h-5 transition-all duration-200 ${
+                  isInWishlist
+                    ? 'fill-red-500 text-red-500 scale-110'
+                    : 'fill-none text-gray-700 group-hover/heart:text-red-500 group-hover/heart:scale-110'
+                }`}
                 stroke="currentColor"
+                strokeWidth={isInWishlist ? 0 : 2}
                 viewBox="0 0 24 24"
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                 />
               </svg>
-              {sitterLocation}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Card Body - Listing Info */}
-      <div className="p-4">
-        {/* Title */}
-        <h4 className="text-base font-semibold text-text-primary mb-2 line-clamp-1">{title}</h4>
-
-        {/* Description */}
-        <p className="text-sm text-text-secondary mb-3 line-clamp-2">{description}</p>
-
-        {/* Services */}
-        <div className="mb-3">
-          <p className="text-xs text-text-tertiary mb-1">Services:</p>
-          <div className="flex flex-wrap gap-1">
-            {service_type?.slice(0, 3).map((service) => (
-              <span
-                key={service}
-                className="px-2 py-1 bg-blue-50 text-text-info text-xs rounded-full font-medium"
-              >
-                {service}
-              </span>
-            ))}
-            {service_type?.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 text-text-secondary text-xs rounded-full">
-                +{service_type.length - 3} more
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Accepted Pets */}
-        <div className="mb-3">
-          <p className="text-xs text-text-tertiary mb-1">Accepts:</p>
-          <div className="flex flex-wrap gap-1">
-            {accepted_pet_types?.slice(0, 3).map((pet) => (
-              <span
-                key={pet}
-                className="px-2 py-1 bg-green-50 text-text-success text-xs rounded-full font-medium capitalize"
-              >
-                {pet}
-              </span>
-            ))}
-            {accepted_pet_types?.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 text-text-secondary text-xs rounded-full">
-                +{accepted_pet_types.length - 3} more
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Amenities */}
-        {amenities && amenities.length > 0 && (
-          <div className="mb-3">
-            <p className="text-xs text-text-tertiary mb-1">Amenities:</p>
-            <div className="flex flex-wrap gap-1">
-              {amenities.slice(0, 2).map((amenity) => (
-                <span
-                  key={amenity}
-                  className="px-2 py-1 bg-amber-50 text-text-warning text-xs rounded-full font-medium"
-                >
-                  {amenity.replace(/_/g, ' ')}
-                </span>
-              ))}
-              {amenities.length > 2 && (
-                <span className="px-2 py-1 bg-gray-100 text-text-secondary text-xs rounded-full">
-                  +{amenities.length - 2} more
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Card Footer - Pricing */}
-      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-        <div className="flex items-center justify-between">
-          {priceDisplay ? (
-            <div>
-              <span className="text-2xl font-bold text-text-primary">${priceDisplay.value.toFixed(0)}</span>
-              <span className="text-sm text-text-secondary">/{priceDisplay.unit}</span>
-            </div>
-          ) : (
-            <span className="text-sm text-text-tertiary">Price upon request</span>
+            </button>
           )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick?.();
-            }}
-            className="px-4 py-2 bg-primary-600 text-text-inverse text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            View Details
-          </button>
+        </div>
+
+        {/* Info Section */}
+        <div className="p-3">
+          {/* Location */}
+          <div className="flex items-start justify-between gap-1 mb-0.5">
+            <h3 className="text-sm font-semibold text-gray-900 truncate flex-1">
+              {location}
+            </h3>
+          </div>
+
+          {/* Title - truncated */}
+          <p className="text-sm text-gray-600 truncate mb-0.5">
+            {title || 'Pet sitting service'}
+          </p>
+
+          {/* Service Type */}
+          <p className="text-sm text-gray-500 capitalize mb-1">
+            {primaryService}
+          </p>
+
+          {/* Price */}
+          <div className="mt-2">
+            {priceDisplay ? (
+              <p className="text-sm">
+                <span className="font-semibold text-gray-900">${priceDisplay.value}</span>
+                <span className="text-gray-600"> / {priceDisplay.unit}</span>
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500">Price upon request</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

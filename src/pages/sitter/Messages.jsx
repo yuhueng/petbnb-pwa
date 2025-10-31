@@ -124,14 +124,39 @@ const SitterMessages = () => {
     setSelectedConversation(conversation);
   };
 
-  const handleSendMessage = async (content) => {
+  const handleSendMessage = async ({ content, file }) => {
     if (!selectedConversation) return;
 
     try {
+      let attachmentUrl = null;
+      let metadata = null;
+
+      // Upload file if present
+      if (file) {
+        // Dynamically import the file upload service
+        const { fileUploadService } = await import('@/services/fileUploadService');
+
+        const uploadResult = await fileUploadService.uploadFile(
+          file,
+          selectedConversation.id
+        );
+
+        if (!uploadResult.success) {
+          toast.error(uploadResult.error || 'Failed to upload file');
+          throw new Error(uploadResult.error);
+        }
+
+        attachmentUrl = uploadResult.url;
+        metadata = uploadResult.metadata;
+      }
+
+      // Send message with optional attachment
       await chatService.sendMessage({
         conversationId: selectedConversation.id,
         senderId: user.id,
-        content,
+        content: content || '', // Allow empty content if there's an attachment
+        attachmentUrl,
+        metadata,
       });
       // Don't manually update messages - real-time subscription handles it
     } catch (error) {
@@ -215,10 +240,10 @@ const SitterMessages = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-          <div className="grid grid-cols-3 h-[calc(100vh-10rem)]">
+          <div className="grid grid-cols-3 h-[calc(100vh-12rem)]">
             {/* Conversation List */}
-            <div className="col-span-1 border-r border-gray-200 overflow-y-auto">
-              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-5 sticky top-0 z-10">
+            <div className="col-span-1 border-r border-gray-200 flex flex-col overflow-hidden">
+              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-5 flex-shrink-0">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,15 +253,17 @@ const SitterMessages = () => {
                   Messages
                 </h2>
               </div>
-              <ConversationList
-                conversations={conversations}
-                onSelectConversation={handleSelectConversation}
-                selectedConversationId={selectedConversation?.id}
-              />
+              <div className="flex-1 overflow-y-auto">
+                <ConversationList
+                  conversations={conversations}
+                  onSelectConversation={handleSelectConversation}
+                  selectedConversationId={selectedConversation?.id}
+                />
+              </div>
             </div>
 
             {/* Chat Interface */}
-            <div className="col-span-2 h-full">
+            <div className="col-span-2 min-h-0">
               <ChatInterface
                 conversation={selectedConversation}
                 messages={messages}

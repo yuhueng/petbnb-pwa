@@ -79,6 +79,8 @@ export const wishlistService = {
             accepted_pet_types,
             accepted_pet_sizes,
             amenities,
+            cover_image_url,
+            image_urls,
             profiles:profiles!listings_sitter_id_fkey (
               id,
               name,

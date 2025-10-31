@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { getInitials } from '@/utils/helpers';
 import BookingRequestCard from '@/components/common/BookingRequestCard';
+import { validateFile, formatFileSize, isImageFile } from '@/utils/fileValidation';
 
 const ChatInterface = ({
   conversation,
@@ -13,8 +14,12 @@ const ChatInterface = ({
 }) => {
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreviewUrl, setFilePreviewUrl] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const otherParticipant = conversation?.otherParticipant;
 
@@ -28,20 +33,71 @@ const ChatInterface = ({
     inputRef.current?.focus();
   }, [conversation?.id]);
 
+  // Clean up file preview URL when component unmounts or file changes
+  useEffect(() => {
+    return () => {
+      if (filePreviewUrl) {
+        URL.revokeObjectURL(filePreviewUrl);
+      }
+    };
+  }, [filePreviewUrl]);
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    const validation = validateFile(file);
+    if (!validation.isValid) {
+      alert(validation.error);
+      return;
+    }
+
+    setSelectedFile(file);
+
+    // Create preview URL for images
+    if (isImageFile(file.type)) {
+      const previewUrl = URL.createObjectURL(file);
+      setFilePreviewUrl(previewUrl);
+    } else {
+      setFilePreviewUrl(null);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    if (filePreviewUrl) {
+      URL.revokeObjectURL(filePreviewUrl);
+    }
+    setSelectedFile(null);
+    setFilePreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
 
-    if (!messageText.trim() || isSending) return;
+    // Allow sending if there's text or a file
+    if ((!messageText.trim() && !selectedFile) || isSending) return;
 
     setIsSending(true);
     try {
-      await onSendMessage(messageText.trim());
+      // Pass both text and file to the parent component
+      await onSendMessage({
+        content: messageText.trim() || '',
+        file: selectedFile,
+      });
+
+      // Clear form
       setMessageText('');
+      handleRemoveFile();
       inputRef.current?.focus();
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
       setIsSending(false);
+      setUploadProgress(0);
     }
   };
 
@@ -196,15 +252,70 @@ const ChatInterface = ({
                   {/* Message bubble */}
                   <div>
                     <div
-                      className={`rounded-2xl px-4 py-3 shadow-sm ${
+                      className={`rounded-2xl overflow-hidden shadow-sm ${
                         isOwn
                           ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
                           : 'bg-white text-gray-900 border border-gray-200'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap break-words">
-                        {message.content}
-                      </p>
+                      {/* Attachment (if present) */}
+                      {message.attachment_url && message.metadata && (
+                        <div className="mb-2">
+                          {message.metadata.isImage ? (
+                            // Image attachment
+                            <img
+                              src={message.attachment_url}
+                              alt={message.metadata.fileName || 'Attachment'}
+                              className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                              style={{ maxHeight: '300px' }}
+                              onClick={() => window.open(message.attachment_url, '_blank')}
+                            />
+                          ) : (
+                            // Document attachment
+                            <a
+                              href={message.attachment_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                                isOwn
+                                  ? 'bg-white/20 hover:bg-white/30'
+                                  : 'bg-gray-50 hover:bg-gray-100'
+                              }`}
+                            >
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                isOwn ? 'bg-white/30' : 'bg-indigo-100'
+                              }`}>
+                                <svg className={`w-5 h-5 ${isOwn ? 'text-white' : 'text-indigo-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium truncate ${isOwn ? 'text-white' : 'text-gray-900'}`}>
+                                  {message.metadata.fileName}
+                                </p>
+                                <p className={`text-xs ${isOwn ? 'text-white/80' : 'text-gray-500'}`}>
+                                  {formatFileSize(message.metadata.fileSize)}
+                                </p>
+                              </div>
+                              <svg className={`w-5 h-5 flex-shrink-0 ${isOwn ? 'text-white' : 'text-indigo-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Text content */}
+                      {message.content && (
+                        <p className={`text-sm whitespace-pre-wrap break-words ${message.attachment_url ? 'px-4 pb-3' : 'px-4 py-3'}`}>
+                          {message.content}
+                        </p>
+                      )}
+
+                      {/* Empty state if only attachment without text */}
+                      {!message.content && message.attachment_url && (
+                        <div className="px-4 py-1"></div>
+                      )}
                     </div>
                     <p
                       className={`text-xs text-gray-500 mt-1.5 font-medium ${
@@ -224,7 +335,68 @@ const ChatInterface = ({
 
       {/* Input */}
       <div className="p-5 border-t-2 border-gray-100 bg-gradient-to-r from-white to-gray-50 flex-shrink-0">
+        {/* File Preview */}
+        {selectedFile && (
+          <div className="mb-3 p-3 bg-white border-2 border-indigo-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              {filePreviewUrl ? (
+                // Image preview
+                <img
+                  src={filePreviewUrl}
+                  alt="Preview"
+                  className="w-16 h-16 rounded-lg object-cover"
+                />
+              ) : (
+                // Document icon
+                <div className="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {selectedFile.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {formatFileSize(selectedFile.size)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemoveFile}
+                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSend} className="flex items-center space-x-3">
+          {/* File upload button */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,.pdf,.doc,.docx,.txt"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isSending}
+            className="flex-shrink-0 w-12 h-12 bg-white border-2 border-gray-200 text-gray-600 rounded-2xl flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+            title="Attach file"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+
+          {/* Text input */}
           <div className="flex-1">
             <textarea
               ref={inputRef}
@@ -237,9 +409,11 @@ const ChatInterface = ({
               style={{ minHeight: '48px', maxHeight: '120px' }}
             />
           </div>
+
+          {/* Send button */}
           <button
             type="submit"
-            disabled={!messageText.trim() || isSending}
+            disabled={(!messageText.trim() && !selectedFile) || isSending}
             className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl flex items-center justify-center hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
           >
             {isSending ? (

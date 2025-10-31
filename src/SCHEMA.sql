@@ -103,10 +103,14 @@ CREATE TABLE listings (
   amenities TEXT[], -- ['fenced_yard', 'air_conditioning', 'pool']
   house_rules TEXT,
   cancellation_policy TEXT,
-  
+
+  -- Images
+  cover_image_url TEXT, -- Main card image
+  image_urls TEXT[], -- Gallery images array
+
   -- Status
   is_active BOOLEAN DEFAULT true,
-  
+
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -528,3 +532,72 @@ CREATE POLICY "Users can add to their wishlist"
 CREATE POLICY "Users can remove from their wishlist"
   ON wishlists FOR DELETE
   USING (auth.uid() = owner_id);
+
+
+-- ============================================
+-- STORAGE BUCKETS & POLICIES
+-- ============================================
+
+-- ============================================
+-- MESSAGE ATTACHMENTS BUCKET
+-- ============================================
+
+-- Create bucket for message attachments (images, documents)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('message-attachments', 'message-attachments', true);
+
+-- Allow authenticated users to upload message attachments
+CREATE POLICY "Allow authenticated uploads"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'message-attachments');
+
+-- Allow public read access to message attachments
+CREATE POLICY "Allow public read"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'message-attachments');
+
+-- Allow users to update their own message attachments
+CREATE POLICY "Allow authenticated updates for message attachments"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (bucket_id = 'message-attachments' AND owner = auth.uid());
+
+-- Allow users to delete their own message attachments
+CREATE POLICY "Allow user deletes"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'message-attachments' AND owner = auth.uid());
+
+-- ============================================
+-- LISTING IMAGES BUCKET
+-- ============================================
+
+-- Create bucket for listing images (cover image and gallery)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('listing-images', 'listing-images', true);
+
+-- Allow authenticated users to upload listing images
+CREATE POLICY "Allow sitters to upload listing images"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'listing-images');
+
+-- Allow public read access to listing images
+CREATE POLICY "Allow public read of listing images"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'listing-images');
+
+-- Allow users to update their own listing images
+CREATE POLICY "Allow users to update own listing images"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (bucket_id = 'listing-images' AND owner = auth.uid());
+
+-- Allow users to delete their own listing images
+CREATE POLICY "Allow users to delete own listing images"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'listing-images' AND owner = auth.uid());

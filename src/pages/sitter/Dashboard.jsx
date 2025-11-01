@@ -397,8 +397,9 @@ const Dashboard = () => {
             </div>
           </button>
         </div>
+      </div>
 
-        {/* Loading State */}
+      {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -425,7 +426,7 @@ const Dashboard = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {currentBookings.map(renderBookingCard)}
               </div>
             )}
@@ -446,7 +447,7 @@ const Dashboard = () => {
                 <p className="text-gray-600">Your completed and cancelled bookings will appear here</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {pastBookings.map(renderBookingCard)}
               </div>
             )}
@@ -607,7 +608,6 @@ const Dashboard = () => {
           </div>
         )}
        </div>
-      </div>
     </div>
   );
 };

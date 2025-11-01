@@ -133,7 +133,7 @@ const SitterCard = ({ listing, onClick, isInWishlist = false, onToggleWishlist }
                 e.stopPropagation();
                 onToggleWishlist(e);
               }}
-              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:shadow-lg hover:scale-110 transition-all duration-200 flex items-center justify-center group/heart"
+              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:shadow-lg hover:scale-110 transition-all duration-200 flex items-center justify-center group/heart"
               aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
             >
               <svg

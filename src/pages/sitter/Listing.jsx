@@ -998,7 +998,7 @@ const Listing = () => {
                         )}
 
                         {/* Status Badge */}
-                        <div className="absolute top-3 right-3 z-10">
+                        <div className="absolute top-3 right-3">
                           <span className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
                             listing.is_active
                               ? 'bg-green-500/90 text-white'

@@ -135,7 +135,7 @@ const ChatInterface = ({
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="flex items-center p-4 border-b-2 border-gray-100 bg-gradient-to-r from-white to-gray-50 flex-shrink-0 z-10 shadow-sm">
+      <div className="flex items-center p-4 border-b-2 border-gray-100 bg-gradient-to-r from-white to-gray-50 flex-shrink-0 z-5 shadow-sm">
         <button
           onClick={onBack}
           className="mr-3 p-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-full lg:hidden transition-colors"

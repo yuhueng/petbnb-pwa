@@ -1,7 +1,10 @@
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/store/authStore';
+import { USER_ROLES } from '@/utils/constants';
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { activeRole } = useAuthStore();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
@@ -36,7 +39,12 @@ const Landing = () => {
             {/* CTA Button */}
             <div className="flex justify-center mb-6">
               <button
-                onClick={() => navigate('/owner/explore')}
+                onClick={() => {
+                  const targetPath = activeRole === USER_ROLES.SITTER
+                    ? '/sitter/dashboard'
+                    : '/owner/explore';
+                  navigate(targetPath);
+                }}
                 className="group relative px-12 py-5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl font-bold text-xl shadow-2xl hover:shadow-indigo-500/50 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
               >
                 <span className="relative z-10 flex items-center gap-2">

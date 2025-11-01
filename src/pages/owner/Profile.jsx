@@ -47,9 +47,9 @@ const Profile = () => {
   // If not authenticated, show login/register forms
   if (!isAuthenticated) {
     return (
-      <div className="p-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold text-text-primary mb-2 text-center">Welcome to PetBNB</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary mb-2 text-center">Welcome to PetBNB</h1>
           <p className="text-text-secondary mb-8 text-center">Login or create an account to access your profile</p>
           <LoginRegisterTabs />
         </div>
@@ -216,10 +216,10 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-text-primary mb-2">Profile & Settings</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary mb-2">Profile & Settings</h1>
           <p className="text-text-secondary">Manage your account, pets, and preferences.</p>
         </div>
 
@@ -243,7 +243,7 @@ const Profile = () => {
 
             {/* Profile Info */}
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-text-primary">{profile?.name}</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-text-primary">{profile?.name}</h2>
               <p className="text-text-secondary">{profile?.email}</p>
               <div className="mt-2">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-50 text-text-info">
@@ -375,7 +375,7 @@ const Profile = () => {
       {/* My Profile Modal */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-text-primary">My Profile</h3>
               <button
@@ -432,7 +432,7 @@ const Profile = () => {
       {/* Settings Modal */}
       {showSettingsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-text-primary">Settings</h3>
               <button
@@ -486,7 +486,7 @@ const Profile = () => {
       {/* Birthdate Modal */}
       {showBirthdateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-text-primary mb-4">Confirm Your Age</h3>
             <p className="text-text-secondary mb-6">
               To become a pet sitter, you must be at least 18 years old. Please enter your
@@ -540,7 +540,7 @@ const Profile = () => {
       {/* My Pets Modal */}
       {showPetsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
@@ -689,7 +689,7 @@ const Profile = () => {
       {/* Pet Form Modal (Add/Edit) */}
       {showPetFormModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-xl font-bold text-text-primary">

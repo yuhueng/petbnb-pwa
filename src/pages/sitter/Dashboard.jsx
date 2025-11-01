@@ -346,7 +346,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-4 sm:px-6 lg:px-8 py-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -357,40 +357,41 @@ const Dashboard = () => {
               </svg>
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-gray-900">My Bookings</h1>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">My Bookings</h1>
               <p className="text-gray-600 mt-1">Manage your pet sitting bookings</p>
             </div>
           </div>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex gap-3 mb-6 bg-white p-2 rounded-xl shadow-md inline-flex">
-          <button
-            onClick={() => setActiveTab('current')}
-            className={`min-w-[160px] px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-              activeTab === 'current'
-                ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Current ({currentBookings.length})
-            </div>
-          </button>
-          <button
-            onClick={() => setActiveTab('past')}
-            className={`min-w-[160px] px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-              activeTab === 'past'
-                ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div className="flex justify-center mb-6">
+          <div className="flex gap-3 bg-white p-2 rounded-xl shadow-md">
+            <button
+              onClick={() => setActiveTab('current')}
+              className={`min-w-[120px] sm:min-w-[160px] px-4 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                activeTab === 'current'
+                  ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Current ({currentBookings.length})
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('past')}
+              className={`min-w-[120px] sm:min-w-[160px] px-4 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                activeTab === 'past'
+                  ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Past ({pastBookings.length})
             </div>

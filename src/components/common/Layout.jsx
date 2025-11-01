@@ -63,7 +63,7 @@ const Layout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1
-              className="text-2xl font-bold text-primary-600 cursor-pointer"
+              className="text-xl sm:text-2xl font-bold text-primary-600 cursor-pointer"
               onClick={() => navigate('/owner/explore')}
             >
               PetBNB
@@ -90,7 +90,7 @@ const Layout = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main>
         <Outlet />
       </main>
 

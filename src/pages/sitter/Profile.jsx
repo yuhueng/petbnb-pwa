@@ -15,9 +15,9 @@ const Profile = () => {
   // If not authenticated, show login/register forms
   if (!isAuthenticated) {
     return (
-      <div className="p-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold text-text-primary mb-2 text-center">Welcome to PetBNB</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary mb-2 text-center">Welcome to PetBNB</h1>
           <p className="text-text-secondary mb-8 text-center">Login or create an account to access your profile</p>
           <LoginRegisterTabs />
         </div>
@@ -48,10 +48,10 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-text-primary mb-2">Profile & Settings</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary mb-2">Profile & Settings</h1>
           <p className="text-text-secondary">Manage your account and preferences.</p>
         </div>
 
@@ -182,7 +182,7 @@ const Profile = () => {
       {/* My Profile Modal */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-text-primary">My Profile</h3>
               <button
@@ -239,7 +239,7 @@ const Profile = () => {
       {/* Settings Modal */}
       {showSettingsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-text-primary">Settings</h3>
               <button

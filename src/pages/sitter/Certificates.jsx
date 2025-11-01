@@ -165,21 +165,21 @@ const Certificates = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Certifications</h1>
-            <p className="text-gray-600 mt-1">Showcase your professional qualifications</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Certifications</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Showcase your professional qualifications</p>
           </div>
           <button
             onClick={handleAddNew}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            className="px-3 py-3 sm:px-6 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Add Certification
+            <span className="hidden sm:inline">Add Certification</span>
           </button>
         </div>
 

@@ -208,7 +208,7 @@ const SitterMessages = () => {
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-2 sm:p-4">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 max-h-[calc(100vh-2rem)] flex flex-col">
           <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-5 flex-shrink-0">
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
@@ -237,7 +237,7 @@ const SitterMessages = () => {
 
   // Desktop view: show both side by side
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-4 sm:px-6 lg:px-8 py-6">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
           <div className="grid grid-cols-3 h-[calc(100vh-12rem)]">

@@ -242,8 +242,8 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
       />
 
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
+        <div className="relative bg-white rounded-2xl shadow-2xl max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl w-full max-h-[90vh] overflow-hidden">
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -257,7 +257,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
           {/* Scrollable Content */}
           <div className="overflow-y-auto max-h-[90vh]">
             {/* Header - Sitter Info with Gradient Background */}
-            <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-8 text-white">
+            <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-4 py-6 sm:px-6 sm:py-8 md:px-8 text-white">
               <button
                 onClick={() => onProfileClick?.(profiles?.id)}
                 className="flex items-start gap-6 w-full text-left hover:bg-white/10 rounded-xl p-4 -m-4 transition-all duration-200 group"
@@ -287,7 +287,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
 
                 {/* Sitter Details */}
                 <div className="flex-1 pt-2">
-                  <h2 className="text-3xl font-bold mb-2 group-hover:underline">{sitterName}</h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-2 group-hover:underline">{sitterName}</h2>
                   <p className="flex items-center mb-3 text-white/90">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -309,9 +309,9 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
             </div>
 
             {/* Main Content */}
-            <div className="px-8 py-6">
+            <div className="px-4 py-4 sm:px-6 md:px-8">
               {/* Listing Title */}
-              <h3 className="text-2xl font-bold text-gray-900 mb-6">{title}</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">{title}</h3>
 
               {/* Key Info Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -610,11 +610,11 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-6 border-t-2 border-gray-200">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t-2 border-gray-200">
                 <button
                   onClick={() => setShowBookingForm(!showBookingForm)}
                   disabled={showBookingForm}
-                  className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+                  className="w-full sm:flex-1 px-6 py-4 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -624,7 +624,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
                 <button
                   onClick={handleStartConversation}
                   disabled={isStartingConversation}
-                  className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+                  className="w-full sm:flex-1 px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
                 >
                   {isStartingConversation ? (
                     <>
@@ -645,7 +645,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
                 </button>
                 <button
                   onClick={onClose}
-                  className="px-6 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                  className="w-full sm:w-auto px-6 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
                 >
                   Close
                 </button>

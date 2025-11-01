@@ -183,7 +183,7 @@ const ChatInterface = ({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-4 bg-gradient-to-br from-gray-50 to-white">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 bg-gradient-to-br from-gray-50 to-white">
         {messages.length === 0 ? (
           <div className="text-center mt-16">
             <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">

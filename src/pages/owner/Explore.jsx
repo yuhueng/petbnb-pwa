@@ -188,7 +188,7 @@ const Explore = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-text-primary mb-4">Explore Pet Sitters</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-text-primary mb-4">Explore Pet Sitters</h1>
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="flex gap-2">

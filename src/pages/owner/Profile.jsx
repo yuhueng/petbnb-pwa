@@ -215,19 +215,19 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#fef5f6]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-text-primary mb-2">Profile & Settings</h1>
-          <p className="text-text-secondary">Manage your account, pets, and preferences.</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-[#3e2d2e] mb-2">Profile & Settings</h1>
+          <p className="text-[#6d6d6d]">Manage your account, pets, and preferences.</p>
         </div>
 
         {/* Profile Header Card */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center space-x-4">
             {/* Avatar */}
-            <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+            <div className="w-20 h-20 rounded-full bg-[#ffe5e5] flex items-center justify-center flex-shrink-0">
               {profile?.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -235,7 +235,7 @@ const Profile = () => {
                   className="w-20 h-20 rounded-full object-cover"
                 />
               ) : (
-                <span className="text-3xl text-text-info font-semibold">
+                <span className="text-3xl text-[#fb7678] font-semibold">
                   {profile?.name?.charAt(0).toUpperCase() || '?'}
                 </span>
               )}
@@ -243,10 +243,10 @@ const Profile = () => {
 
             {/* Profile Info */}
             <div className="flex-1">
-              <h2 className="text-lg sm:text-xl font-bold text-text-primary">{profile?.name}</h2>
-              <p className="text-text-secondary">{profile?.email}</p>
+              <h2 className="text-lg sm:text-xl font-bold text-[#3e2d2e]">{profile?.name}</h2>
+              <p className="text-[#6d6d6d]">{profile?.email}</p>
               <div className="mt-2">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-50 text-text-info">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#ffe5e5] text-[#fb7678]">
                   {profile?.is_verified ? '👑 Pet Owner & Sitter' : '🐾 Pet Owner'}
                 </span>
               </div>
@@ -256,20 +256,42 @@ const Profile = () => {
 
         {/* Settings Menu */}
         <div className="space-y-3 mb-6">
+                    {/* Become a Sitter */}
+                    <button
+            onClick={handleBecomeSitter}
+            className="w-full bg-gradient-to-r from-[#ffe5e5] to-[#fcf3f3] rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-[#ffe5e5] flex items-center justify-center">
+                <span className="text-xl">{profile?.is_verified ? '🎉' : '🐾'}</span>
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-[#3e2d2e]">
+                  {profile?.is_verified ? 'Sitter Mode' : 'Become a Sitter'}
+                </p>
+                <p className="text-sm text-[#6d6d6d]">
+                  {profile?.is_verified ? 'Switch to sitter dashboard' : 'Earn money taking care of pets'}
+                </p>
+              </div>
+            </div>
+            <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
           {/* My Profile */}
           <button
             onClick={() => setShowProfileModal(true)}
             className="w-full bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 rounded-full bg-[#ffe5e5] flex items-center justify-center">
+                <svg className="w-5 h-5 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
               <div className="text-left">
-                <p className="font-semibold text-text-primary">My Profile</p>
-                <p className="text-sm text-text-secondary">View and edit your personal information</p>
+                <p className="font-semibold text-[#3e2d2e]">My Profile</p>
+                <p className="text-sm text-[#6d6d6d]">View and edit your personal information</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,37 +305,14 @@ const Profile = () => {
             className="w-full bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 rounded-full bg-[#ffe5e5] flex items-center justify-center">
+                <svg className="w-5 h-5 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div className="text-left">
-                <p className="font-semibold text-text-primary">My Pets</p>
-                <p className="text-sm text-text-secondary">Manage your pet profiles and information</p>
-              </div>
-            </div>
-            <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-
-          {/* Become a Sitter */}
-          <button
-            onClick={handleBecomeSitter}
-            className="w-full bg-gradient-to-r from-primary-50 to-secondary-50 rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
-                <span className="text-xl">{profile?.is_verified ? '🎉' : '🐾'}</span>
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-text-primary">
-                  {profile?.is_verified ? 'Sitter Mode' : 'Become a Sitter'}
-                </p>
-                <p className="text-sm text-text-secondary">
-                  {profile?.is_verified ? 'Switch to sitter dashboard' : 'Earn money taking care of pets'}
-                </p>
+                <p className="font-semibold text-[#3e2d2e]">My Pets</p>
+                <p className="text-sm text-[#6d6d6d]">Manage your pet profiles and information</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -334,8 +333,8 @@ const Profile = () => {
                 </svg>
               </div>
               <div className="text-left">
-                <p className="font-semibold text-text-primary">Settings</p>
-                <p className="text-sm text-text-secondary">Notifications, privacy, and preferences</p>
+                <p className="font-semibold text-[#3e2d2e]">Settings</p>
+                <p className="text-sm text-[#6d6d6d]">Notifications, privacy, and preferences</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,7 +355,7 @@ const Profile = () => {
               </div>
               <div className="text-left">
                 <p className="font-semibold text-text-error">Log Out</p>
-                <p className="text-sm text-text-secondary">Sign out of your account</p>
+                <p className="text-sm text-[#6d6d6d]">Sign out of your account</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -368,7 +367,7 @@ const Profile = () => {
         {/* Support Info */}
         <div className="text-center py-4">
           <p className="text-sm text-text-tertiary">Need help?</p>
-          <p className="text-sm text-text-info font-medium">support@petbnb.com</p>
+          <p className="text-sm text-[#fb7678] font-medium">support@petbnb.com</p>
         </div>
       </div>
 
@@ -377,10 +376,10 @@ const Profile = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-text-primary">My Profile</h3>
+              <h3 className="text-xl font-bold text-[#3e2d2e]">My Profile</h3>
               <button
                 onClick={() => setShowProfileModal(false)}
-                className="text-text-secondary hover:text-text-primary"
+                className="text-[#6d6d6d] hover:text-[#3e2d2e]"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -390,29 +389,29 @@ const Profile = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Username</label>
-                <p className="font-medium text-text-primary">{profile?.name}</p>
+                <label className="block text-sm font-medium text-[#6d6d6d] mb-1">Username</label>
+                <p className="font-medium text-[#3e2d2e]">{profile?.name}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Email</label>
-                <p className="font-medium text-text-primary">{profile?.email}</p>
+                <label className="block text-sm font-medium text-[#6d6d6d] mb-1">Email</label>
+                <p className="font-medium text-[#3e2d2e]">{profile?.email}</p>
               </div>
               {profile?.phone && (
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Phone</label>
-                  <p className="font-medium text-text-primary">{profile.phone}</p>
+                  <label className="block text-sm font-medium text-[#6d6d6d] mb-1">Phone</label>
+                  <p className="font-medium text-[#3e2d2e]">{profile.phone}</p>
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Account Type</label>
-                <p className="font-medium text-text-primary">
+                <label className="block text-sm font-medium text-[#6d6d6d] mb-1">Account Type</label>
+                <p className="font-medium text-[#3e2d2e]">
                   {profile?.is_verified ? 'Pet Owner & Sitter' : 'Pet Owner'}
                 </p>
               </div>
               {profile?.bio && (
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Bio</label>
-                  <p className="text-text-primary">{profile.bio}</p>
+                  <label className="block text-sm font-medium text-[#6d6d6d] mb-1">Bio</label>
+                  <p className="text-[#3e2d2e]">{profile.bio}</p>
                 </div>
               )}
             </div>
@@ -420,7 +419,7 @@ const Profile = () => {
             <div className="mt-6">
               <button
                 onClick={() => setShowProfileModal(false)}
-                className="w-full px-4 py-2 bg-primary-600 text-text-inverse rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                className="w-full px-4 py-2 bg-[#fb7678] text-white rounded-lg hover:bg-[#fa6568] transition-colors font-medium"
               >
                 Close
               </button>
@@ -434,10 +433,10 @@ const Profile = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-text-primary">Settings</h3>
+              <h3 className="text-xl font-bold text-[#3e2d2e]">Settings</h3>
               <button
                 onClick={() => setShowSettingsModal(false)}
-                className="text-text-secondary hover:text-text-primary"
+                className="text-[#6d6d6d] hover:text-[#3e2d2e]"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -448,8 +447,8 @@ const Profile = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between py-3 border-b border-gray-200">
                 <div>
-                  <p className="font-medium text-text-primary">Push Notifications</p>
-                  <p className="text-sm text-text-secondary">Receive booking updates</p>
+                  <p className="font-medium text-[#3e2d2e]">Push Notifications</p>
+                  <p className="text-sm text-[#6d6d6d]">Receive booking updates</p>
                 </div>
                 <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200">
                   <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-1" />
@@ -458,10 +457,10 @@ const Profile = () => {
 
               <div className="flex items-center justify-between py-3 border-b border-gray-200">
                 <div>
-                  <p className="font-medium text-text-primary">Email Notifications</p>
-                  <p className="text-sm text-text-secondary">Receive email updates</p>
+                  <p className="font-medium text-[#3e2d2e]">Email Notifications</p>
+                  <p className="text-sm text-[#6d6d6d]">Receive email updates</p>
                 </div>
-                <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary-600">
+                <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-[#fb7678]">
                   <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-6" />
                 </button>
               </div>
@@ -474,7 +473,7 @@ const Profile = () => {
             <div className="mt-6">
               <button
                 onClick={() => setShowSettingsModal(false)}
-                className="w-full px-4 py-2 bg-primary-600 text-text-inverse rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                className="w-full px-4 py-2 bg-[#fb7678] text-white rounded-lg hover:bg-[#fa6568] transition-colors font-medium"
               >
                 Close
               </button>
@@ -487,15 +486,15 @@ const Profile = () => {
       {showBirthdateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-text-primary mb-4">Confirm Your Age</h3>
-            <p className="text-text-secondary mb-6">
+            <h3 className="text-xl font-bold text-[#3e2d2e] mb-4">Confirm Your Age</h3>
+            <p className="text-[#6d6d6d] mb-6">
               To become a pet sitter, you must be at least 18 years old. Please enter your
               birthdate to continue.
             </p>
 
             <form onSubmit={handleBirthdateSubmit}>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-text-secondary mb-2">
+                <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                   Birthdate
                 </label>
                 <input
@@ -503,7 +502,7 @@ const Profile = () => {
                   value={birthdate}
                   onChange={(e) => setBirthdate(e.target.value)}
                   max={new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                   required
                 />
               </div>
@@ -515,7 +514,7 @@ const Profile = () => {
                     setShowBirthdateModal(false);
                     setBirthdate('');
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-text-secondary rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-[#6d6d6d] rounded-lg hover:bg-[#ffe5e5] transition-colors"
                   disabled={isLoading}
                 >
                   Cancel
@@ -523,7 +522,7 @@ const Profile = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-primary-600 text-text-inverse rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-[#fb7678] text-white rounded-lg hover:bg-[#fa6568] transition-colors disabled:opacity-50"
                 >
                   {isLoading ? 'Confirming...' : 'Confirm'}
                 </button>
@@ -544,14 +543,14 @@ const Profile = () => {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
-                <h3 className="text-xl font-bold text-text-primary">My Pets</h3>
-                <p className="text-sm text-text-secondary mt-1">
+                <h3 className="text-xl font-bold text-[#3e2d2e]">My Pets</h3>
+                <p className="text-sm text-[#6d6d6d] mt-1">
                   {pets.length} {pets.length === 1 ? 'pet' : 'pets'} registered
                 </p>
               </div>
               <button
                 onClick={() => setShowPetsModal(false)}
-                className="text-text-secondary hover:text-text-primary transition-colors"
+                className="text-[#6d6d6d] hover:text-[#3e2d2e] transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -563,15 +562,15 @@ const Profile = () => {
             <div className="flex-1 overflow-y-auto p-6">
               {petsLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb7678]"></div>
                 </div>
               ) : pets.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
                     <span className="text-4xl">🐾</span>
                   </div>
-                  <h4 className="text-lg font-semibold text-text-primary mb-2">No pets yet</h4>
-                  <p className="text-text-secondary mb-6">
+                  <h4 className="text-lg font-semibold text-[#3e2d2e] mb-2">No pets yet</h4>
+                  <p className="text-[#6d6d6d] mb-6">
                     Add your first pet to get started with booking pet sitters.
                   </p>
                 </div>
@@ -599,7 +598,7 @@ const Profile = () => {
                           <div className="flex-1">
                             <h4 className="text-lg font-bold text-text-primary">{pet.name}</h4>
                             <div className="flex flex-wrap gap-2 mt-1">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-50 text-text-info">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#ffe5e5] text-[#fb7678]">
                                 {pet.species.charAt(0).toUpperCase() + pet.species.slice(1)}
                               </span>
                               {pet.breed && (
@@ -619,7 +618,7 @@ const Profile = () => {
                               )}
                             </div>
                             {pet.temperament && (
-                              <p className="text-sm text-text-secondary mt-2">
+                              <p className="text-sm text-[#6d6d6d] mt-2">
                                 <span className="font-medium">Temperament:</span> {pet.temperament}
                               </p>
                             )}
@@ -635,7 +634,7 @@ const Profile = () => {
                         <div className="flex gap-2 ml-4">
                           <button
                             onClick={() => handleOpenPetForm(pet)}
-                            className="p-2 text-text-info hover:bg-primary-50 rounded-lg transition-colors"
+                            className="p-2 text-[#fb7678] hover:bg-[#ffe5e5] rounded-lg transition-colors"
                             title="Edit pet"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -660,10 +659,10 @@ const Profile = () => {
             </div>
 
             {/* Footer with Add Button */}
-            <div className="border-t border-gray-200 p-4 bg-gray-50">
+            <div className="border-t border-gray-200 p-4 bg-[#fef5f6]">
               <button
                 onClick={() => handleOpenPetForm()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-text-primary border-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#fb7678] text-white border-2 rounded-lg hover:bg-[#fa6568] transition-colors font-medium"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -675,7 +674,7 @@ const Profile = () => {
             {/* Floating Add Button (Alternative - Circular) */}
             <button
               onClick={() => handleOpenPetForm()}
-              className="absolute bottom-8 right-8 w-14 h-14 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 hover:shadow-xl transition-all flex items-center justify-center"
+              className="absolute bottom-8 right-8 w-14 h-14 bg-[#fb7678] text-white rounded-full shadow-lg hover:bg-[#fa6568] hover:shadow-xl transition-all flex items-center justify-center"
               title="Add new pet"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -692,12 +691,12 @@ const Profile = () => {
           <div className="bg-white rounded-lg shadow-xl max-w-[95vw] sm:max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-xl font-bold text-text-primary">
+              <h3 className="text-xl font-bold text-[#3e2d2e]">
                 {editingPet ? 'Edit Pet' : 'Add New Pet'}
               </h3>
               <button
                 onClick={handleClosePetForm}
-                className="text-text-secondary hover:text-text-primary transition-colors"
+                className="text-[#6d6d6d] hover:text-[#3e2d2e] transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -710,12 +709,12 @@ const Profile = () => {
               <div className="space-y-6">
                 {/* Basic Information */}
                 <div>
-                  <h4 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+                  <h4 className="text-lg font-semibold text-[#3e2d2e] mb-4 flex items-center gap-2">
                     <span>🐾</span> Basic Information
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Pet Name <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -724,20 +723,20 @@ const Profile = () => {
                         value={petForm.name}
                         onChange={handlePetFormChange}
                         placeholder="e.g., Buddy"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Species <span className="text-red-500">*</span>
                       </label>
                       <select
                         name="species"
                         value={petForm.species}
                         onChange={handlePetFormChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                         required
                       >
                         <option value="dog">🐕 Dog</option>
@@ -750,7 +749,7 @@ const Profile = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Breed
                       </label>
                       <input
@@ -759,19 +758,19 @@ const Profile = () => {
                         value={petForm.breed}
                         onChange={handlePetFormChange}
                         placeholder="e.g., Golden Retriever"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Gender
                       </label>
                       <select
                         name="gender"
                         value={petForm.gender}
                         onChange={handlePetFormChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                       >
                         <option value="unknown">Unknown</option>
                         <option value="male">Male</option>
@@ -780,7 +779,7 @@ const Profile = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Age (years)
                       </label>
                       <input
@@ -791,12 +790,12 @@ const Profile = () => {
                         placeholder="e.g., 3"
                         min="0"
                         max="50"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Weight (kg)
                       </label>
                       <input
@@ -807,7 +806,7 @@ const Profile = () => {
                         placeholder="e.g., 25.5"
                         min="0"
                         step="0.1"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                       />
                     </div>
                   </div>
@@ -815,12 +814,12 @@ const Profile = () => {
 
                 {/* Medical Information */}
                 <div>
-                  <h4 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+                  <h4 className="text-lg font-semibold text-[#3e2d2e] mb-4 flex items-center gap-2">
                     <span>🏥</span> Medical Information
                   </h4>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Medical Conditions
                       </label>
                       <textarea
@@ -829,12 +828,12 @@ const Profile = () => {
                         onChange={handlePetFormChange}
                         placeholder="Any existing medical conditions..."
                         rows="2"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Allergies
                       </label>
                       <textarea
@@ -843,12 +842,12 @@ const Profile = () => {
                         onChange={handlePetFormChange}
                         placeholder="Any known allergies..."
                         rows="2"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Medications
                       </label>
                       <textarea
@@ -857,13 +856,13 @@ const Profile = () => {
                         onChange={handlePetFormChange}
                         placeholder="Current medications and dosage..."
                         rows="2"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-2">
+                        <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                           Veterinarian Name
                         </label>
                         <input
@@ -872,12 +871,12 @@ const Profile = () => {
                           value={petForm.vet_name}
                           onChange={handlePetFormChange}
                           placeholder="e.g., Dr. Smith"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-text-secondary mb-2">
+                        <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                           Veterinarian Phone
                         </label>
                         <input
@@ -886,7 +885,7 @@ const Profile = () => {
                           value={petForm.vet_phone}
                           onChange={handlePetFormChange}
                           placeholder="e.g., +65 1234 5678"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                         />
                       </div>
                     </div>
@@ -895,12 +894,12 @@ const Profile = () => {
 
                 {/* Behavioral & Care Information */}
                 <div>
-                  <h4 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+                  <h4 className="text-lg font-semibold text-[#3e2d2e] mb-4 flex items-center gap-2">
                     <span>🎯</span> Behavioral & Care Information
                   </h4>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Temperament
                       </label>
                       <input
@@ -909,12 +908,12 @@ const Profile = () => {
                         value={petForm.temperament}
                         onChange={handlePetFormChange}
                         placeholder="e.g., Friendly, energetic, shy..."
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Special Needs
                       </label>
                       <textarea
@@ -923,12 +922,12 @@ const Profile = () => {
                         onChange={handlePetFormChange}
                         placeholder="Any special needs or requirements..."
                         rows="2"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-2">
+                      <label className="block text-sm font-medium text-[#6d6d6d] mb-2">
                         Feeding Instructions
                       </label>
                       <textarea
@@ -937,7 +936,7 @@ const Profile = () => {
                         onChange={handlePetFormChange}
                         placeholder="Feeding schedule, portion sizes, food preferences..."
                         rows="3"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678]"
                       />
                     </div>
                   </div>
@@ -946,11 +945,11 @@ const Profile = () => {
             </form>
 
             {/* Footer with Actions */}
-            <div className="border-t border-gray-200 p-6 bg-gray-50 flex gap-3">
+            <div className="border-t border-gray-200 p-6 bg-[#fef5f6] flex gap-3">
               <button
                 type="button"
                 onClick={handleClosePetForm}
-                className="flex-1 px-4 py-2 border border-gray-300 text-text-secondary rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                className="flex-1 px-4 py-2 border border-gray-300 text-[#6d6d6d] rounded-lg hover:bg-gray-100 transition-colors font-medium"
               >
                 Cancel
               </button>
@@ -958,7 +957,7 @@ const Profile = () => {
                 type="submit"
                 onClick={handlePetFormSubmit}
                 disabled={petsLoading}
-                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 font-medium"
+                className="flex-1 px-4 py-2 bg-[#fb7678] text-white rounded-lg hover:bg-[#fa6568] transition-colors disabled:opacity-50 font-medium"
               >
                 {petsLoading ? 'Saving...' : editingPet ? 'Update Pet' : 'Add Pet'}
               </button>

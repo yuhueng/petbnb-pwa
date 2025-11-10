@@ -601,3 +601,163 @@ CREATE POLICY "Allow users to delete own listing images"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (bucket_id = 'listing-images' AND owner = auth.uid());
+
+-- ============================================
+-- PET ACTIVITIES - Activity Timeline Tracking
+-- ============================================
+-- This table stores all activities (walk, feed, play) performed by sitters
+-- Visible to both sitters and owners for timeline display
+
+CREATE TABLE pet_activities (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- Foreign Keys (matches existing schema style)
+  booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  pet_sitter_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  pet_owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+
+  -- Activity Details
+  activity_type TEXT NOT NULL CHECK (activity_type IN ('walk', 'feed', 'play')),
+  activity_title TEXT NOT NULL, -- e.g., "Walk", "Feed", "Play"
+  activity_description TEXT, -- e.g., "Great walk today!", "Ate 2 cups of kibble"
+
+  -- Activity Specifics (flexible JSON storage for type-specific data)
+  activity_detail JSONB DEFAULT NULL,
+  -- Examples:
+  -- For walk: {"distance": "2 miles", "duration": "30 minutes", "location": "Central Park"}
+  -- For feed: {"amount": "2 cups", "food_type": "Dry kibble", "notes": "Ate everything!"}
+  -- For play: {"activity": "Fetch", "duration": "20 minutes", "toys": ["ball", "frisbee"]}
+
+  -- Image/Media URLs (stored as array for multiple images)
+  image_urls TEXT[], -- Array of image URLs from Supabase storage
+
+  -- Timestamps
+  activity_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(), -- When activity happened
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+  -- Metadata
+  is_visible BOOLEAN DEFAULT true, -- Can be hidden by owner/sitter
+  notes TEXT -- Additional notes from sitter
+);
+
+-- ============================================
+-- INDEXES - For better query performance
+-- ============================================
+
+CREATE INDEX idx_pet_activities_booking ON pet_activities(booking_id);
+CREATE INDEX idx_pet_activities_sitter ON pet_activities(pet_sitter_id);
+CREATE INDEX idx_pet_activities_owner ON pet_activities(pet_owner_id);
+CREATE INDEX idx_pet_activities_timestamp ON pet_activities(activity_timestamp DESC);
+CREATE INDEX idx_pet_activities_type ON pet_activities(activity_type);
+
+-- Composite index for common queries (get activities by booking and date)
+CREATE INDEX idx_pet_activities_booking_timestamp ON pet_activities(booking_id, activity_timestamp DESC);
+
+-- ============================================
+-- TRIGGER - Auto-update timestamps
+-- ============================================
+
+-- Use existing update_updated_at_column() function
+CREATE TRIGGER update_pet_activities_updated_at
+  BEFORE UPDATE ON pet_activities
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- ROW LEVEL SECURITY (RLS) - Enable
+-- ============================================
+
+ALTER TABLE pet_activities ENABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- RLS POLICIES
+-- ============================================
+
+-- Sitters can view their own activities
+CREATE POLICY "Sitters can view their activities"
+  ON pet_activities FOR SELECT
+  TO authenticated
+  USING (auth.uid() = pet_sitter_id);
+
+-- Pet owners can view activities for their bookings
+CREATE POLICY "Owners can view activities for their pets"
+  ON pet_activities FOR SELECT
+  TO authenticated
+  USING (auth.uid() = pet_owner_id);
+
+-- Sitters can create activities for their own bookings
+CREATE POLICY "Sitters can create activities for their bookings"
+  ON pet_activities FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    auth.uid() = pet_sitter_id AND
+    EXISTS (
+      SELECT 1 FROM bookings
+      WHERE bookings.id = pet_activities.booking_id
+      AND bookings.pet_sitter_id = auth.uid()
+      AND bookings.status IN ('confirmed', 'in_progress')
+    )
+  );
+
+-- Sitters can update their own activities (within 24 hours)
+CREATE POLICY "Sitters can update their activities within 24 hours"
+  ON pet_activities FOR UPDATE
+  TO authenticated
+  USING (
+    auth.uid() = pet_sitter_id AND
+    created_at > NOW() - INTERVAL '24 hours'
+  )
+  WITH CHECK (auth.uid() = pet_sitter_id);
+
+-- Sitters can delete their own activities (within 24 hours)
+CREATE POLICY "Sitters can delete their activities within 24 hours"
+  ON pet_activities FOR DELETE
+  TO authenticated
+  USING (
+    auth.uid() = pet_sitter_id AND
+    created_at > NOW() - INTERVAL '24 hours'
+  );
+
+-- ============================================
+-- STORAGE BUCKET - Pet Activity Images
+-- ============================================
+
+-- Create bucket for pet activity images
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('pet-activity-images', 'pet-activity-images', true)
+ON CONFLICT (id) DO NOTHING; -- Prevent error if bucket already exists
+
+-- Allow authenticated users to upload pet activity images
+CREATE POLICY "Allow sitters to upload activity images"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'pet-activity-images');
+
+-- Allow public read access to pet activity images
+CREATE POLICY "Allow public read of activity images"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'pet-activity-images');
+
+-- Allow users to update their own activity images
+CREATE POLICY "Allow users to update own activity images"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (bucket_id = 'pet-activity-images' AND owner = auth.uid());
+
+-- Allow users to delete their own activity images
+CREATE POLICY "Allow users to delete own activity images"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'pet-activity-images' AND owner = auth.uid());
+
+-- ============================================
+-- COMMENTS - Documentation
+-- ============================================
+
+COMMENT ON TABLE pet_activities IS 'Stores pet care activities (walk, feed, play) performed by sitters during bookings. Visible to both sitters and owners for timeline tracking.';
+COMMENT ON COLUMN pet_activities.activity_type IS 'Type of activity: walk, feed, or play';
+COMMENT ON COLUMN pet_activities.activity_detail IS 'JSONB object containing type-specific details about the activity';
+COMMENT ON COLUMN pet_activities.image_urls IS 'Array of image URLs uploaded during activity logging (stored in pet-activity-images bucket)';
+COMMENT ON COLUMN pet_activities.activity_timestamp IS 'When the activity was performed (can be different from created_at if backfilled)';
+COMMENT ON COLUMN pet_activities.created_at IS 'When the record was created in the database';

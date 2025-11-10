@@ -36,8 +36,8 @@ const OwnerMessages = () => {
             d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
           />
         </svg>
-        <h2 className="text-2xl font-bold text-gray-900 mb-3">Please log in to view messages</h2>
-        <p className="text-gray-600 mb-6">You need to be logged in to chat with pet sitters</p>
+        <h2 className="text-2xl font-bold text-[#3e2d2e] mb-3">Please log in to view messages</h2>
+        <p className="text-[#6d6d6d] mb-6">You need to be logged in to chat with pet sitters</p>
         <button
           onClick={() => navigate('/owner/profile')}
           className="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
@@ -199,8 +199,8 @@ const OwnerMessages = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-[#fef5f6] to-[#fcf3f3] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb7678]"></div>
       </div>
     );
   }
@@ -209,7 +209,7 @@ const OwnerMessages = () => {
   if (isMobileView) {
     if (selectedConversation) {
       return (
-        <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+        <div className="h-screen bg-gradient-to-br from-[#fef5f6] to-[#fcf3f3] flex flex-col">
           <div className="flex-1 overflow-hidden">
             <ChatInterface
               conversation={selectedConversation}
@@ -225,9 +225,9 @@ const OwnerMessages = () => {
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-2 sm:p-4">
+      <div className="min-h-screen bg-gradient-to-br from-[#fef5f6] to-[#fcf3f3] p-2 sm:p-4">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200 max-h-[calc(100vh-2rem)] flex flex-col">
-          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-5 flex-shrink-0">
+          <div className="bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] px-6 py-5 flex-shrink-0">
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,7 +236,7 @@ const OwnerMessages = () => {
               </div>
               Messages
             </h2>
-            <p className="text-indigo-100 mt-1 text-sm">
+            <p className="text-white/90 mt-1 text-sm">
               Chat with your pet sitters
             </p>
           </div>
@@ -254,13 +254,13 @@ const OwnerMessages = () => {
 
   // Desktop view: show both side by side
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#fef5f6] to-[#fcf3f3] px-4 sm:px-6 lg:px-8 py-6">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
           <div className="grid grid-cols-3 h-[calc(100vh-12rem)]">
             {/* Conversation List */}
             <div className="col-span-1 border-r border-gray-200 flex flex-col overflow-hidden">
-              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-6 py-5 flex-shrink-0">
+              <div className="bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] px-6 py-5 flex-shrink-0">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <div className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

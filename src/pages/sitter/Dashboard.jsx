@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { chatService } from '@/services/chatService';
+import { petActivityService } from '@/services/petActivityService';
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
@@ -15,12 +16,85 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [processingBookingId, setProcessingBookingId] = useState(null);
 
+  // Activity Modal States
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
+  const [activityModalStep, setActivityModalStep] = useState(1); // 1 = question, 2 = image upload
+  const [activityAnswer, setActivityAnswer] = useState('');
+  const [activityImages, setActivityImages] = useState([]);
+  const [isUploadingActivity, setIsUploadingActivity] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Timeline Activities
+  const [todayActivities, setTodayActivities] = useState([]);
+
   // Fetch sitter bookings on mount
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchSitterBookings(user.id);
     }
   }, [isAuthenticated, user, fetchSitterBookings]);
+
+  // Calculate bookings by status and date using useMemo
+  const { currentBookings, upcomingBookings, pastBookings } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const current = bookings.filter(b => {
+      const startDate = new Date(b.start_date);
+      const endDate = new Date(b.end_date);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      return (
+        (b.status === 'confirmed' || b.status === 'in_progress') &&
+        startDate <= today &&
+        endDate >= today
+      );
+    });
+
+    const upcoming = bookings.filter(b => {
+      const startDate = new Date(b.start_date);
+      startDate.setHours(0, 0, 0, 0);
+      return (
+        b.status === 'pending' ||
+        (b.status === 'confirmed' && startDate > today)
+      );
+    });
+
+    const past = bookings.filter(b => {
+      const endDate = new Date(b.end_date);
+      endDate.setHours(0, 0, 0, 0);
+      return (
+        b.status === 'completed' ||
+        b.status === 'cancelled' ||
+        endDate < today
+      );
+    });
+
+    return { currentBookings: current, upcomingBookings: upcoming, pastBookings: past };
+  }, [bookings]);
+
+  // Fetch today's activities for current bookings
+  useEffect(() => {
+    const fetchTodayActivities = async () => {
+      if (currentBookings.length > 0) {
+        // Get activities for the first current booking (for now)
+        const booking = currentBookings[0];
+        const result = await petActivityService.getActivitiesByDate(
+          booking.id,
+          new Date()
+        );
+        if (result.success) {
+          setTodayActivities(result.data);
+        }
+      }
+    };
+
+    if (activeTab === 'current' && currentBookings.length > 0) {
+      fetchTodayActivities();
+    }
+  }, [activeTab, currentBookings]);
 
   if (!isAuthenticated) {
     return (
@@ -50,29 +124,6 @@ const Dashboard = () => {
     );
   }
 
-  // Separate bookings by status and date
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const currentBookings = bookings.filter(b => {
-    const endDate = new Date(b.end_date);
-    endDate.setHours(0, 0, 0, 0);
-    return (
-      (b.status === 'confirmed' || b.status === 'pending' || b.status === 'in_progress') &&
-      endDate >= today
-    );
-  });
-
-  const pastBookings = bookings.filter(b => {
-    const endDate = new Date(b.end_date);
-    endDate.setHours(0, 0, 0, 0);
-    return (
-      b.status === 'completed' ||
-      b.status === 'cancelled' ||
-      endDate < today
-    );
-  });
-
   // Handle booking click
   const handleBookingClick = (booking) => {
     setSelectedBooking(booking);
@@ -86,15 +137,15 @@ const Dashboard = () => {
   };
 
   // Navigate to chat with owner
-  const handleGoToChat = async () => {
-    if (!selectedBooking || !user) return;
+  const handleGoToChat = async (booking) => {
+    if (!booking || !user) return;
 
     try {
       // Get or create conversation - explicitly set roles
-      // selectedBooking.pet_owner_id = owner
+      // booking.pet_owner_id = owner
       // user.id = sitter (current user)
       const conversation = await chatService.getOrCreateConversationExplicit(
-        selectedBooking.pet_owner_id,
+        booking.pet_owner_id,
         user.id
       );
 
@@ -102,7 +153,7 @@ const Dashboard = () => {
       navigate('/sitter/messages', { state: { conversationId: conversation.id } });
     } catch (error) {
       console.error('Failed to navigate to chat:', error);
-      alert('Failed to open chat. Please try again.');
+      toast.error('Failed to open chat. Please try again.');
     }
   };
 
@@ -173,6 +224,170 @@ const Dashboard = () => {
       toast.error('Failed to decline booking. Please try again.');
     } finally {
       setProcessingBookingId(null);
+    }
+  };
+
+  // Handle activity card click - Open Step 1 modal
+  const handleActivityClick = (activityType) => {
+    if (currentBookings.length === 0) {
+      toast.error('No active booking to log activity');
+      return;
+    }
+
+    setSelectedActivity(activityType);
+    setActivityModalOpen(true);
+    setActivityModalStep(1);
+    setActivityAnswer('');
+    setActivityImages([]);
+  };
+
+  // Get question text based on activity type
+  const getActivityQuestion = (activityType) => {
+    const petName = currentBookings[0]?.owner?.name || 'the pet';
+    switch (activityType) {
+      case 'feed':
+        return `How much did ${petName}'s pet eat?`;
+      case 'walk':
+        return `How much did ${petName}'s pet walk?`;
+      case 'play':
+        return `What did ${petName}'s pet play?`;
+      default:
+        return 'Add activity details';
+    }
+  };
+
+  // Handle Step 1 - Answer submission
+  const handleStep1Continue = () => {
+    if (!activityAnswer.trim()) {
+      toast.error('Please provide an answer');
+      return;
+    }
+    setActivityModalStep(2);
+  };
+
+  // Handle image selection
+  const handleImageSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setActivityImages(files);
+    }
+  };
+
+  // Handle Step 2 - Submit activity with images
+  const handleSubmitActivity = async () => {
+    if (activityImages.length === 0) {
+      toast.error('Please upload at least one photo');
+      return;
+    }
+
+    if (!user || currentBookings.length === 0) {
+      toast.error('Unable to submit activity');
+      return;
+    }
+
+    setIsUploadingActivity(true);
+
+    try {
+      const booking = currentBookings[0];
+
+      // Upload images
+      const uploadResult = await petActivityService.uploadMultipleImages(
+        activityImages,
+        booking.id,
+        selectedActivity
+      );
+
+      if (!uploadResult.success || uploadResult.urls.length === 0) {
+        throw new Error('Failed to upload images');
+      }
+
+      // Create activity
+      const activityData = {
+        bookingId: booking.id,
+        petSitterId: user.id,
+        petOwnerId: booking.pet_owner_id,
+        activityType: selectedActivity,
+        activityTitle: selectedActivity.charAt(0).toUpperCase() + selectedActivity.slice(1),
+        activityDescription: activityAnswer,
+        activityDetail: {
+          detail: activityAnswer,
+        },
+        imageUrls: uploadResult.urls,
+      };
+
+      const result = await petActivityService.createActivity(activityData);
+
+      if (result.success) {
+        // Close activity modal
+        setActivityModalOpen(false);
+        setActivityModalStep(1);
+        setSelectedActivity(null);
+        setActivityAnswer('');
+        setActivityImages([]);
+
+        // Show success modal
+        setShowSuccessModal(true);
+
+        // Refresh timeline
+        const activitiesResult = await petActivityService.getActivitiesByDate(
+          booking.id,
+          new Date()
+        );
+        if (activitiesResult.success) {
+          setTodayActivities(activitiesResult.data);
+        }
+
+        // Auto-close success modal after 2 seconds
+        setTimeout(() => {
+          setShowSuccessModal(false);
+        }, 2000);
+      } else {
+        throw new Error('Failed to create activity');
+      }
+    } catch (error) {
+      console.error('Error submitting activity:', error);
+      toast.error('Failed to log activity. Please try again.');
+    } finally {
+      setIsUploadingActivity(false);
+    }
+  };
+
+  // Close activity modal
+  const handleCloseActivityModal = () => {
+    setActivityModalOpen(false);
+    setActivityModalStep(1);
+    setSelectedActivity(null);
+    setActivityAnswer('');
+    setActivityImages([]);
+  };
+
+  // Get activity icon and color
+  const getActivityStyles = (activityType) => {
+    switch (activityType) {
+      case 'walk':
+        return {
+          color: '#ffd189',
+          icon: '🚶',
+          bgGradient: 'from-[#ffd189] to-[#ffb347]',
+        };
+      case 'feed':
+        return {
+          color: '#a2d08a',
+          icon: '🍖',
+          bgGradient: 'from-[#a2d08a] to-[#8bc574]',
+        };
+      case 'play':
+        return {
+          color: '#c0a7fe',
+          icon: '🎾',
+          bgGradient: 'from-[#c0a7fe] to-[#a88fec]',
+        };
+      default:
+        return {
+          color: '#ffd189',
+          icon: '📝',
+          bgGradient: 'from-[#ffd189] to-[#ffb347]',
+        };
     }
   };
 
@@ -346,111 +561,610 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-4 sm:px-6 lg:px-8 py-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="w-14 h-14 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">My Bookings</h1>
-              <p className="text-gray-600 mt-1">Manage your pet sitting bookings</p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#fef5f6] flex justify-center items-start py-6 px-4">
+      {/* Mobile Container - 393px width matching the guide */}
+      <div className="relative w-full max-w-[393px] bg-[#fef5f6] mx-auto">
 
-        {/* Tab Switcher */}
-        <div className="flex justify-center mb-6">
-          <div className="flex gap-3 bg-white p-2 rounded-xl shadow-md">
+        {/* Top Navigation Tabs */}
+        <div className="flex justify-center mb-6 mt-4">
+          <div className="inline-flex items-center gap-5 bg-white px-3 py-2.5 rounded-[20px] shadow-[0px_1px_4px_rgba(0,0,0,0.25)]">
             <button
               onClick={() => setActiveTab('current')}
-              className={`min-w-[120px] sm:min-w-[160px] px-4 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+              className={`w-20 px-3 py-1.5 rounded-[30px] text-xs font-bold transition-all duration-300 ${
                 activeTab === 'current'
-                  ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'bg-[#fb7678] text-white border border-[#fe8c85]'
+                  : 'text-[#737373] hover:bg-[#f5f5f5]'
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Current ({currentBookings.length})
-              </div>
+              Current
+            </button>
+            <button
+              onClick={() => setActiveTab('upcoming')}
+              className={`w-20 px-3 py-1.5 rounded-[30px] text-xs font-normal transition-all duration-300 ${
+                activeTab === 'upcoming'
+                  ? 'bg-[#fb7678] text-white border border-[#fe8c85] font-bold'
+                  : 'text-[#737373] hover:bg-[#f5f5f5]'
+              }`}
+            >
+              Upcoming
             </button>
             <button
               onClick={() => setActiveTab('past')}
-              className={`min-w-[120px] sm:min-w-[160px] px-4 sm:px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+              className={`w-20 px-3 py-1.5 rounded-[30px] text-xs font-normal transition-all duration-300 ${
                 activeTab === 'past'
-                  ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'bg-[#fb7678] text-white border border-[#fe8c85] font-bold'
+                  : 'text-[#737373] hover:bg-[#f5f5f5]'
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Past ({pastBookings.length})
-            </div>
-          </button>
+              Past
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Loading State */}
+        {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb7678]"></div>
           </div>
         )}
 
-        {/* Current Bookings */}
-        {!isLoading && activeTab === 'current' && (
-          <div>
-            {currentBookings.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+        {/* Content based on active tab */}
+        {!isLoading && (
+          <div className="space-y-6">
+            {/* Currently Petsitting Section */}
+            {activeTab === 'current' && currentBookings.length > 0 && (
+              <div className="px-4">
+                <h2 className="text-base font-bold text-[#3e2d2e] mb-3">
+                  Currently Petsitting ({currentBookings.filter(b => b.status === 'confirmed' || b.status === 'in_progress').length})
+                </h2>
+
+                {currentBookings
+                  .filter(b => b.status === 'confirmed' || b.status === 'in_progress')
+                  .map(booking => (
+                    <div key={booking.id} className="bg-white rounded-[10px] p-2.5 mb-3 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 transition-all duration-300">
+                      <div className="flex gap-3">
+                        {/* Pet Image/Icon */} {/* Placeholder pet icon */}
+                        <div className="w-[74px] h-[74px] rounded-[10px] bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-4xl flex-shrink-0">
+                          🐶
+                        </div>
+
+                        {/* Pet Info */}
+                        <div className="flex-1 flex flex-col ">
+                          {/* Pet Name and Details */}
+                          <div className="flex flex-col gap-0.5">
+                            <p className="text-sm font-medium text-black leading-normal">
+                              {booking.listing?.title || 'Pet Sitting Service'}
+                            </p>
+                            <p className="text-[10px] font-light text-[#535353] leading-normal">
+                              {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
+                            </p>
+                            <div className="h-px bg-[#e5e5e5] my-1"></div>
+                          </div>
+
+                          {/* Owner Section */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              {/* Owner Avatar */}
+                              <div className="w-[27px] h-[27px] rounded-full bg-gradient-to-br from-[#ffd189] to-[#ffb347] flex-shrink-0"></div>
+
+                              <div className="flex flex-col gap-px">
+                                <p className="text-xs font-medium text-black leading-normal">
+                                  {booking.owner?.name || 'Owner'}
+                                </p>
+                                <div className="flex items-center text-center">
+                                  <span className="inline-flex items-center px-0.5 py-0.5 bg-[#fcf3f3] border border-[#fb7678] rounded-sm">
+                                    <span className="text-[6px] font-semibold text-[#fb7678]">OWNER</span>
+                                  </span>
+                                </div>
+
+                              </div>
+                            </div>
+
+                            {/* Message Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleGoToChat(booking);
+                              }}
+                              className="px-2 bg-[#fb7678cc] hover:bg-[#fb7678] rounded-[20px] transition-all duration-300 hover:scale-105"
+                            >
+                              <div className="flex items-center text-center px-2.5 py-1.5">
+                              <span className="text-[8px] font-bold text-white whitespace-nowrap">💬 Message</span>
+                              </div>
+                              
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {/* Pet's Routine Section - Only show for current bookings */}
+            {activeTab === 'current' && currentBookings.length > 0 && (
+              <div className="px-3">
+                <div className="bg-[#fb7678e6] rounded-[10px] p-3 shadow-[0_4px_12px_rgba(251,118,120,0.3)] mx-auto">
+                  <h2 className="text-base font-extrabold text-white mb-3.5">Pet Care Routine</h2>
+
+                  <div className="flex gap-2.5 overflow-x-auto pb-6 flex justify-center">
+
+                    {/* Walk Card */}
+                      <div className="flex-shrink-0 w-[106px]">
+                        <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-300"
+                            onClick={() => handleActivityClick('walk')}>
+                          
+                          {/* Top colored bar */}
+                          <div className="w-full h-[15px] bg-[#ffc369] rounded-t-[10px]"></div>
+                          
+                          {/* Content - using flex column */}
+                          <div className="flex flex-col items-center px-3 pb-8 pt-1.5">
+                            {/* Title */}
+                            <p className="text-base font-bold text-[#ffc369] mb-2">Walk</p>
+                            
+                            {/* Main icon box */}
+                            <div className="w-[54px] h-[54px] rounded-[10px] bg-gradient-to-br from-[#ffc36933] to-[#ffb34733] flex items-center justify-center text-2xl">
+                              🐕
+                            </div>
+                            
+                            {/* Bottom circular icon - positioned relative to flow */}
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-[#ffc369] to-[#ffb347] flex items-center justify-center text-2xl shadow-md">
+                              🚶
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+
+                      {/* Feed Card - With Floating Bottom Icon */}
+                      <div className="flex-shrink-0 w-[106px]">
+                        <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-300"
+                            onClick={() => handleActivityClick('feed')}>
+                          
+                          {/* Top colored bar */}
+                          <div className="w-full h-[15px] bg-[#a2d08a] rounded-t-[10px]"></div>
+                          
+                          {/* Content - using flex column */}
+                          <div className="flex flex-col items-center px-3 pb-8 pt-1.5">
+                            {/* Title */}
+                            <p className="text-base font-bold text-[#a2d08a] mb-2">Feed</p>
+                            
+                            {/* Main icon box */}
+                            <div className="w-[54px] h-[54px] rounded-[10px] bg-gradient-to-br from-[#a2d08a33] to-[#8bc57433] flex items-center justify-center text-2xl">
+                              🍽️
+                            </div>
+                          </div>
+                          
+                          {/* Floating bottom icon - positioned absolutely */}
+                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-[#a2d08a] to-[#8bc574] flex items-center justify-center text-2xl shadow-md">
+                            🍖
+                          </div>
+                        </div>
+                      </div>
+
+
+                      {/* Play Card - With Floating Bottom Icon */}
+                      <div className="flex-shrink-0 w-[106px]">
+                        <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-300"
+                            onClick={() => handleActivityClick('play')}>
+                          
+                          {/* Top colored bar */}
+                          <div className="w-full h-[15px] bg-[#c0a7fe] rounded-t-[10px]"></div>
+                          
+                          {/* Content - using flex column */}
+                          <div className="flex flex-col items-center px-3 pb-8 pt-1.5">
+                            {/* Title */}
+                            <p className="text-base font-bold text-[#c0a7fe] mb-2">Play</p>
+                            
+                            {/* Main icon box */}
+                            <div className="w-[54px] h-[54px] rounded-[10px] bg-gradient-to-br from-[#c0a7fe33] to-[#a88fec33] flex items-center justify-center text-2xl">
+                              ⚽
+                            </div>
+                          </div>
+                          
+                          {/* Floating bottom icon - positioned absolutely */}
+                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-[#c0a7fe] to-[#a88fec] flex items-center justify-center text-xl shadow-md">
+                            🎾
+                          </div>
+                        </div>
+                      </div>
+
+                    
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No current bookings</h3>
-                <p className="text-gray-600 mb-6">You don't have any upcoming or ongoing bookings</p>
+              </div>
+            )}
+
+            {/* Pet's Timeline Section */}
+            {activeTab === 'current' && currentBookings.length > 0 && (
+              <div className="px-4 pb-6">
+                <div className="relative bg-white rounded-[15px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+                  <h2 className="text-base font-bold text-[#3e2d2e] mb-1">Today's Timeline</h2>
+                  <p className="text-base font-semibold text-[#fe8c85] mb-4">
+                    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                  </p>
+
+                  {/* Timeline Items */}
+                  {todayActivities.length > 0 ? (
+                    <div className="space-y-6">
+                      {todayActivities.map((activity, index) => {
+                        const styles = getActivityStyles(activity.activity_type);
+                        const timestamp = new Date(activity.activity_timestamp);
+                        const timeStr = timestamp.toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true,
+                        });
+
+                        return (
+                          <div key={activity.id} className="relative">
+                            <div className="flex items-start gap-3">
+                              {/* Event Icon */}
+                              <div
+                                className="w-[42px] h-[42px] rounded-full flex items-center justify-center text-xl flex-shrink-0 relative "
+                                style={{ backgroundColor: styles.color }}
+                              >
+                                {styles.icon}
+                              </div>
+
+                              {/* Event Details */}
+                              <div className="flex-1 pt-1">
+                                <div className="flex items-start justify-between mb-1">
+                                  <div>
+                                    <p className="text-sm font-semibold text-black leading-normal">
+                                      {activity.activity_title}
+                                    </p>
+                                    <p className="text-xs font-normal text-[#6d6d6d] leading-normal">
+                                      {activity.activity_description}
+                                    </p>
+                                  </div>
+                                  <p className="text-xs font-normal text-[#6d6d6d] whitespace-nowrap ml-2">
+                                    {timeStr}
+                                  </p>
+                                </div>
+
+                                {/* Event Images */}
+                                {activity.image_urls && activity.image_urls.length > 0 && (
+                                  <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+                                    {activity.image_urls.slice(0, 3).map((url, imgIndex) => (
+                                      <img
+                                        key={imgIndex}
+                                        src={url}
+                                        alt={`${activity.activity_title} ${imgIndex + 1}`}
+                                        className="w-[100px] h-[100px] rounded-[10px] object-cover flex-shrink-0 shadow-sm"
+                                      />
+                                    ))}
+                                    {activity.image_urls.length > 3 && (
+                                      <div className="w-[100px] h-[100px] rounded-[10px] bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                        <p className="text-sm font-semibold text-gray-600">
+                                          +{activity.image_urls.length - 3}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Connecting Line */}
+                            {index < todayActivities.length - 1 && (
+                              <div
+                                className="absolute left-[20px] w-0.5 -bottom-4"
+                                style={{
+                                  height: activity.image_urls && activity.image_urls.length > 0 ? '140px' : '32px',
+                                  background: `linear-gradient(to bottom, ${styles.color}, ${getActivityStyles(todayActivities[index + 1].activity_type).color})`,
+                                }}
+                              ></div>
+                            )}
+
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-2">📝</div>
+                      <p className="text-sm text-[#6d6d6d]">No activities logged today</p>
+                      <p className="text-xs text-[#999] mt-1">Start by logging Walk, Feed, or Play activities</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Empty States */}
+            {!isLoading && activeTab === 'current' && currentBookings.length === 0 && (
+              <div className="px-4">
+                <div className="bg-white rounded-[15px] p-8 text-center shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+                  <div className="text-6xl mb-4">📅</div>
+                  <h3 className="text-lg font-bold text-[#3e2d2e] mb-2">No Current Bookings</h3>
+                  <p className="text-sm text-[#6d6d6d] mb-4">You don't have any current pet sitting assignments</p>
+                  <button
+                    onClick={() => navigate('/sitter/listing')}
+                    className="px-6 py-3 bg-[#fb7678] text-white rounded-[30px] font-bold text-sm hover:bg-[#fa6568] transition-all"
+                  >
+                    Manage Your Listing
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'upcoming' && upcomingBookings.length === 0 && (
+              <div className="px-4">
+                <div className="bg-white rounded-[15px] p-8 text-center shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+                  <div className="text-6xl mb-4">⏰</div>
+                  <h3 className="text-lg font-bold text-[#3e2d2e] mb-2">No Upcoming Bookings</h3>
+                  <p className="text-sm text-[#6d6d6d]">You don't have any upcoming pet sitting assignments</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'past' && pastBookings.length === 0 && (
+              <div className="px-4">
+                <div className="bg-white rounded-[15px] p-8 text-center shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
+                  <div className="text-6xl mb-4">✅</div>
+                  <h3 className="text-lg font-bold text-[#3e2d2e] mb-2">No Past Bookings</h3>
+                  <p className="text-sm text-[#6d6d6d]">Your completed bookings will appear here</p>
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming Bookings List */}
+            {activeTab === 'upcoming' && upcomingBookings.length > 0 && (
+              <div className="px-4 space-y-3">
+                <h2 className="text-base font-bold text-[#3e2d2e] mb-3">
+                  Upcoming Bookings ({upcomingBookings.length})
+                </h2>
+                {upcomingBookings.map(booking => (
+                  <div key={booking.id}
+                       onClick={() => handleBookingClick(booking)}
+                       className="bg-white rounded-[10px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-sm font-semibold text-black">{booking.listing?.title}</h3>
+                      {getStatusBadge(booking.status)}
+                    </div>
+                    <p className="text-xs text-[#6d6d6d] mb-2">
+                      {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
+                    </p>
+                    <div className="flex items-center justify-between pt-2 border-t border-[#e5e5e5]">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#ffd189] to-[#ffb347]"></div>
+                        <span className="text-xs font-medium text-black">{booking.owner?.name}</span>
+                      </div>
+                      {booking.total_price && (
+                        <span className="text-sm font-bold text-[#3e2d2e]">
+                          ${(booking.total_price / 100).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Accept/Decline for pending */}
+                    {booking.status === 'pending' && (
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={(e) => handleAcceptBooking(e, booking)}
+                          disabled={processingBookingId === booking.id}
+                          className="flex-1 px-3 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-[20px] text-xs font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                        >
+                          {processingBookingId === booking.id ? 'Processing...' : '✓ Accept'}
+                        </button>
+                        <button
+                          onClick={(e) => handleDeclineBooking(e, booking)}
+                          disabled={processingBookingId === booking.id}
+                          className="flex-1 px-3 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[20px] text-xs font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                        >
+                          {processingBookingId === booking.id ? 'Processing...' : '✗ Decline'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Past Bookings List */}
+            {activeTab === 'past' && pastBookings.length > 0 && (
+              <div className="px-4 space-y-3">
+                <h2 className="text-base font-bold text-[#3e2d2e] mb-3">
+                  Past Bookings ({pastBookings.length})
+                </h2>
+                {pastBookings.map(booking => (
+                  <div key={booking.id}
+                       onClick={() => handleBookingClick(booking)}
+                       className="bg-white rounded-[10px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer opacity-90">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-sm font-semibold text-black">{booking.listing?.title}</h3>
+                      {getStatusBadge(booking.status)}
+                    </div>
+                    <p className="text-xs text-[#6d6d6d] mb-2">
+                      {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
+                    </p>
+                    <div className="flex items-center justify-between pt-2 border-t border-[#e5e5e5]">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#ffd189] to-[#ffb347]"></div>
+                        <span className="text-xs font-medium text-black">{booking.owner?.name}</span>
+                      </div>
+                      {booking.total_price && (
+                        <span className="text-sm font-bold text-[#3e2d2e]">
+                          ${(booking.total_price / 100).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Activity Modal - 2 Step Process */}
+        {activityModalOpen && selectedActivity && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+              onClick={handleCloseActivityModal}
+            />
+
+            {/* Modal */}
+            <div className="flex min-h-full items-center justify-center p-4">
+              <div className="relative bg-white rounded-[20px] shadow-2xl max-w-md w-full">
+                {/* Close Button */}
                 <button
-                  onClick={() => navigate('/sitter/listing')}
-                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+                  onClick={handleCloseActivityModal}
+                  className="absolute top-4 right-4 z-10 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
                 >
-                  Manage Your Listing
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
+
+                {/* Step 1: Question */}
+                {activityModalStep === 1 && (
+                  <div className="p-8">
+                    <div className="text-center mb-6">
+                      <div className="text-5xl mb-4">
+                        {selectedActivity === 'walk' && '🚶'}
+                        {selectedActivity === 'feed' && '🍖'}
+                        {selectedActivity === 'play' && '🎾'}
+                      </div>
+                      <h2 className="text-xl font-bold text-[#3e2d2e] mb-2">
+                        {getActivityQuestion(selectedActivity)}
+                      </h2>
+                      <p className="text-sm text-[#6d6d6d]">Step 1 of 2</p>
+                    </div>
+
+                    <textarea
+                      value={activityAnswer}
+                      onChange={(e) => setActivityAnswer(e.target.value)}
+                      placeholder={`e.g., ${
+                        selectedActivity === 'walk' ? '2 miles around the park' :
+                        selectedActivity === 'feed' ? '2 cups of dry food' :
+                        'Fetch with a tennis ball'
+                      }`}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-[15px] focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors resize-none mb-6"
+                      rows="4"
+                    />
+
+                    <button
+                      onClick={handleStep1Continue}
+                      className="w-full py-3 bg-[#fb7678] hover:bg-[#fa6568] text-white rounded-[30px] font-bold transition-all"
+                    >
+                      Continue to Photo Upload
+                    </button>
+                  </div>
+                )}
+
+                {/* Step 2: Image Upload */}
+                {activityModalStep === 2 && (
+                  <div className="p-8">
+                    <div className="text-center mb-6">
+                      <div className="text-5xl mb-4">📸</div>
+                      <h2 className="text-xl font-bold text-[#3e2d2e] mb-2">
+                        Upload Photos
+                      </h2>
+                      <p className="text-sm text-[#6d6d6d]">Step 2 of 2</p>
+                    </div>
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      capture="environment"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+
+                    {activityImages.length === 0 ? (
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full h-48 border-2 border-dashed border-gray-300 rounded-[15px] hover:border-[#fb7678] hover:bg-[#ffe5e5]/50 transition-all flex flex-col items-center justify-center gap-3 mb-6"
+                      >
+                        <div className="w-16 h-16 bg-[#ffe5e5] rounded-full flex items-center justify-center">
+                          <svg className="w-8 h-8 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700">
+                            Take or Upload Photos
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">PNG, JPG, or WEBP</p>
+                        </div>
+                      </button>
+                    ) : (
+                      <div className="mb-6">
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {Array.from(activityImages).map((file, index) => (
+                            <div key={index} className="relative w-20 h-20">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-cover rounded-[10px]"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-sm text-[#fb7678] font-semibold"
+                        >
+                          + Add More Photos
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setActivityModalStep(1)}
+                        className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-[30px] font-semibold transition-all"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={handleSubmitActivity}
+                        disabled={isUploadingActivity || activityImages.length === 0}
+                        className="flex-1 py-3 bg-[#fb7678] hover:bg-[#fa6568] text-white rounded-[30px] font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isUploadingActivity ? (
+                          <span className="flex items-center justify-center">
+                            <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Uploading...
+                          </span>
+                        ) : (
+                          'Submit Activity'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {currentBookings.map(renderBookingCard)}
-              </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* Past Bookings */}
-        {!isLoading && activeTab === 'past' && (
-          <div>
-            {pastBookings.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No past bookings</h3>
-                <p className="text-gray-600">Your completed and cancelled bookings will appear here</p>
+        {/* Pawtastic Success Modal */}
+        {showSuccessModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div className="relative bg-white rounded-[30px] shadow-2xl p-8 max-w-sm w-full text-center animate-[bounce_0.6s_ease-in-out]">
+              <div className="text-7xl mb-4">🎉</div>
+              <h2 className="text-3xl font-extrabold text-[#fb7678] mb-2">
+                Pawtastic!
+              </h2>
+              <p className="text-base font-medium text-[#3e2d2e]">
+                Pet's timeline has been updated
+              </p>
+              <div className="mt-6 flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-[#fb7678] rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-[#fb7678] rounded-full animate-pulse delay-75"></div>
+                <div className="w-2 h-2 bg-[#fb7678] rounded-full animate-pulse delay-150"></div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {pastBookings.map(renderBookingCard)}
-              </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -478,7 +1192,7 @@ const Dashboard = () => {
 
                 <div className="overflow-y-auto max-h-[90vh]">
                   {/* Header with Gradient */}
-                  <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-8 text-white">
+                  <div className="bg-[#fb7678] px-8 py-8 text-white rounded-t-2xl">
                     <h2 className="text-3xl font-bold mb-3">Booking Details</h2>
                     <div className="inline-block">
                       {getStatusBadge(selectedBooking.status)}
@@ -586,8 +1300,8 @@ const Dashboard = () => {
                     {/* Action Buttons */}
                     <div className="flex gap-4 pt-6 border-t-2 border-gray-200 mt-6">
                       <button
-                        onClick={handleGoToChat}
-                        className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
+                        onClick={() => handleGoToChat(selectedBooking)}
+                        className="flex-1 px-6 py-4 bg-[#fb7678] hover:bg-[#fa6568] text-white rounded-[20px] font-bold hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
                       >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -596,7 +1310,7 @@ const Dashboard = () => {
                       </button>
                       <button
                         onClick={handleCloseModal}
-                        className="px-6 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                        className="px-6 py-4 bg-gray-100 text-gray-700 rounded-[20px] font-semibold hover:bg-gray-200 transition-colors"
                       >
                         Close
                       </button>

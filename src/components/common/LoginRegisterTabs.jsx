@@ -70,7 +70,7 @@ const LoginRegisterTabs = () => {
     <div className="max-w-md mx-auto">
       <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl p-8 border border-gray-200 overflow-hidden relative">
         {/* Decorative gradient top border */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#fb7678] via-[#fe8c85] to-[#ffa8aa]"></div>
 
         {/* Tab Headers */}
         <div className="flex gap-2 mb-8 bg-gray-100 p-1.5 rounded-xl">
@@ -78,7 +78,7 @@ const LoginRegisterTabs = () => {
             onClick={() => setActiveTab('login')}
             className={`flex-1 py-3 px-4 text-center font-semibold transition-all duration-300 rounded-lg ${
               activeTab === 'login'
-                ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
+                ? 'bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] text-white shadow-lg transform scale-105'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
             }`}
           >
@@ -88,7 +88,7 @@ const LoginRegisterTabs = () => {
             onClick={() => setActiveTab('register')}
             className={`flex-1 py-3 px-4 text-center font-semibold transition-all duration-300 rounded-lg ${
               activeTab === 'register'
-                ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg transform scale-105'
+                ? 'bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] text-white shadow-lg transform scale-105'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
             }`}
           >
@@ -117,7 +117,7 @@ const LoginRegisterTabs = () => {
                   required
                   value={loginData.email}
                   onChange={handleLoginChange}
-                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-all"
                   placeholder="you@example.com"
                 />
               </div>
@@ -141,7 +141,7 @@ const LoginRegisterTabs = () => {
                   required
                   value={loginData.password}
                   onChange={handleLoginChange}
-                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-all"
                   placeholder="Enter your password"
                 />
               </div>
@@ -150,7 +150,7 @@ const LoginRegisterTabs = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-4 px-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-indigo-500/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              className="w-full py-4 px-4 bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] text-white rounded-xl font-bold hover:shadow-lg hover:shadow-[#fb7678]/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fb7678] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -192,7 +192,7 @@ const LoginRegisterTabs = () => {
                   required
                   value={registerData.name}
                   onChange={handleRegisterChange}
-                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-all"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -216,7 +216,7 @@ const LoginRegisterTabs = () => {
                   required
                   value={registerData.email}
                   onChange={handleRegisterChange}
-                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-all"
                   placeholder="you@example.com"
                 />
               </div>
@@ -241,7 +241,7 @@ const LoginRegisterTabs = () => {
                   minLength={6}
                   value={registerData.password}
                   onChange={handleRegisterChange}
-                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                  className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-all"
                   placeholder="Minimum 6 characters"
                 />
               </div>
@@ -253,14 +253,14 @@ const LoginRegisterTabs = () => {
               </p>
             </div>
 
-            <div className="relative bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl p-4">
+            <div className="relative bg-gradient-to-r from-[#ffe5e5] to-[#fcf3f3] border-2 border-[#fb7678] rounded-xl p-4">
               <div className="flex gap-3">
                 <div className="flex-shrink-0">
-                  <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <p className="text-sm text-indigo-900 font-medium">
+                <p className="text-sm text-[#3e2d2e] font-medium">
                   You'll start as a pet owner. Want to become a sitter? You can enable it later from your profile page.
                 </p>
               </div>
@@ -269,7 +269,7 @@ const LoginRegisterTabs = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-4 px-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-indigo-500/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              className="w-full py-4 px-4 bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] text-white rounded-xl font-bold hover:shadow-lg hover:shadow-[#fb7678]/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fb7678] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>

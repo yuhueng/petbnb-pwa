@@ -85,7 +85,7 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
         <div className="flex min-h-full items-center justify-center p-4">
           <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-12">
             <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb7678]"></div>
             </div>
           </div>
         </div>
@@ -127,7 +127,7 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
             {/* Header with Gradient */}
             <div className={`px-8 py-8 text-white ${
               isSitter
-                ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600'
+                ? 'bg-gradient-to-r from-[#fb7678] to-[#ffa8aa]'
                 : 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600'
             }`}>
               <div className="flex items-start gap-6">
@@ -164,7 +164,7 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                   <div className="flex items-center gap-4 mb-3">
                     <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
                       isSitter
-                        ? 'bg-purple-500/30 backdrop-blur-sm'
+                        ? 'bg-white/30 backdrop-blur-sm'
                         : 'bg-teal-500/30 backdrop-blur-sm'
                     }`}>
                       {isSitter ? '🐾 Pet Sitter' : '👤 Pet Owner'}
@@ -199,8 +199,8 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                   {/* Active Listings */}
                   {listings.length > 0 && (
                     <div className="mb-8">
-                      <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mr-2">
+                      <h4 className="text-lg font-bold text-[#3e2d2e] mb-4 flex items-center">
+                        <div className="w-8 h-8 bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] rounded-lg flex items-center justify-center mr-2">
                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
@@ -209,21 +209,21 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                       </h4>
                       <div className="space-y-4">
                         {listings.map((listing) => (
-                          <div key={listing.id} className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-200">
-                            <h5 className="font-bold text-gray-900 mb-2">{listing.title}</h5>
-                            <p className="text-gray-700 text-sm mb-3 line-clamp-2">{listing.description}</p>
+                          <div key={listing.id} className="bg-gradient-to-r from-[#fcf3f3] to-[#ffe5e5] rounded-xl p-5 border border-[#ffa8aa]">
+                            <h5 className="font-bold text-[#3e2d2e] mb-2">{listing.title}</h5>
+                            <p className="text-[#6d6d6d] text-sm mb-3 line-clamp-2">{listing.description}</p>
                             <div className="flex flex-wrap gap-2 mb-3">
                               {listing.service_type?.map((service) => (
                                 <span
                                   key={service}
-                                  className="px-3 py-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs rounded-full font-semibold capitalize"
+                                  className="px-3 py-1 bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] text-white text-xs rounded-full font-semibold capitalize"
                                 >
                                   {service.replace(/_/g, ' ')}
                                 </span>
                               ))}
                             </div>
                             {(listing.price_per_day || listing.price_per_hour) && (
-                              <div className="text-sm font-semibold text-gray-900">
+                              <div className="text-sm font-semibold text-[#3e2d2e]">
                                 {listing.price_per_day && `$${(listing.price_per_day / 100).toFixed(0)}/day`}
                                 {listing.price_per_day && listing.price_per_hour && ' • '}
                                 {listing.price_per_hour && `$${(listing.price_per_hour / 100).toFixed(0)}/hour`}
@@ -238,8 +238,8 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                   {/* Certifications */}
                   {certifications.length > 0 && (
                     <div className="mb-8">
-                      <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                        <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center mr-2">
+                      <h4 className="text-lg font-bold text-[#3e2d2e] mb-4 flex items-center">
+                        <div className="w-8 h-8 bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] rounded-lg flex items-center justify-center mr-2">
                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                           </svg>
@@ -248,7 +248,7 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {certifications.map((cert) => (
-                          <div key={cert.id} className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200">
+                          <div key={cert.id} className="bg-gradient-to-r from-[#fcf3f3] to-[#ffe5e5] rounded-lg p-4 border border-[#ffa8aa]">
                             <div className="flex items-start gap-3">
                               {cert.is_verified && (
                                 <svg className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 24 24">
@@ -256,12 +256,12 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                                 </svg>
                               )}
                               <div className="flex-1">
-                                <h5 className="font-semibold text-gray-900 text-sm">{cert.certification_name}</h5>
+                                <h5 className="font-semibold text-[#3e2d2e] text-sm">{cert.certification_name}</h5>
                                 {cert.issuing_organization && (
-                                  <p className="text-xs text-gray-600 mt-1">{cert.issuing_organization}</p>
+                                  <p className="text-xs text-[#6d6d6d] mt-1">{cert.issuing_organization}</p>
                                 )}
                                 {cert.issued_date && (
-                                  <p className="text-xs text-gray-500 mt-1">
+                                  <p className="text-xs text-[#6d6d6d] mt-1">
                                     Issued: {new Date(cert.issued_date).toLocaleDateString()}
                                   </p>
                                 )}
@@ -276,12 +276,12 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                   {/* Empty state for sitters */}
                   {listings.length === 0 && certifications.length === 0 && (
                     <div className="text-center py-12">
-                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-20 h-20 bg-[#ffe5e5] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-10 h-10 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-gray-600">No services or certifications listed yet</p>
+                      <p className="text-[#6d6d6d]">No services or certifications listed yet</p>
                     </div>
                   )}
                 </>
@@ -293,7 +293,7 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                   {/* Pets */}
                   {pets.length > 0 && (
                     <div className="mb-8">
-                      <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                      <h4 className="text-lg font-bold text-[#3e2d2e] mb-4 flex items-center">
                         <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mr-2">
                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -317,7 +317,7 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                                 </div>
                               )}
                               <div className="flex-1">
-                                <h5 className="font-bold text-gray-900 mb-1">{pet.name}</h5>
+                                <h5 className="font-bold text-[#3e2d2e] mb-1">{pet.name}</h5>
                                 <div className="flex flex-wrap gap-2 mb-2">
                                   <span className="px-2 py-1 bg-green-600 text-white text-xs rounded-full font-medium capitalize">
                                     {pet.species}
@@ -329,7 +329,7 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                                   )}
                                 </div>
                                 {pet.age && (
-                                  <p className="text-xs text-gray-600">
+                                  <p className="text-xs text-[#6d6d6d]">
                                     {pet.age} {pet.age === 1 ? 'year' : 'years'} old
                                   </p>
                                 )}
@@ -344,12 +344,12 @@ const ProfileModal = ({ userId, isOpen, onClose }) => {
                   {/* Empty state for owners */}
                   {pets.length === 0 && (
                     <div className="text-center py-12">
-                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-20 h-20 bg-[#ffe5e5] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-10 h-10 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-gray-600">No pets added yet</p>
+                      <p className="text-[#6d6d6d]">No pets added yet</p>
                     </div>
                   )}
                 </>

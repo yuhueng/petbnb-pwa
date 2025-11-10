@@ -151,11 +151,11 @@ const Certificates = () => {
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
-        <h2 className="text-2xl font-bold text-gray-900 mb-3">Please log in to view certificates</h2>
-        <p className="text-gray-600 mb-6">You need to be logged in to manage your certifications</p>
+        <h2 className="text-2xl font-bold text-[#3e2d2e] mb-3">Please log in to view certificates</h2>
+        <p className="text-[#6d6d6d] mb-6">You need to be logged in to manage your certifications</p>
         <button
           onClick={() => navigate('/sitter/profile')}
-          className="px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+          className="px-6 py-3 bg-[#fb7678] text-white rounded-lg font-medium hover:bg-[#fa6568] transition-colors"
         >
           Log In
         </button>
@@ -164,17 +164,17 @@ const Certificates = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-[#fef5f6] to-[#fcf3f3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Certifications</h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">Showcase your professional qualifications</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#3e2d2e]">My Certifications</h1>
+            <p className="text-[#6d6d6d] mt-1 text-sm sm:text-base">Showcase your professional qualifications</p>
           </div>
           <button
             onClick={handleAddNew}
-            className="px-3 py-3 sm:px-6 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            className="px-3 py-3 sm:px-6 bg-[#fb7678] text-white rounded-lg font-medium hover:bg-[#fa6568] transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -186,15 +186,15 @@ const Certificates = () => {
         {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb7678]"></div>
           </div>
         )}
 
         {/* Empty State */}
         {!loading && certifications.length === 0 && (
           <div className="bg-white rounded-xl shadow-md p-12 text-center border border-gray-200">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
-              <svg className="w-12 h-12 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-[#ffe5e5] to-[#fcf3f3] rounded-full flex items-center justify-center">
+              <svg className="w-12 h-12 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -203,11 +203,11 @@ const Certificates = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">No certifications yet</h3>
-            <p className="text-gray-600 mb-6">Add your professional certifications to build trust with pet owners</p>
+            <h3 className="text-2xl font-bold text-[#3e2d2e] mb-2">No certifications yet</h3>
+            <p className="text-[#6d6d6d] mb-6">Add your professional certifications to build trust with pet owners</p>
             <button
               onClick={handleAddNew}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors inline-flex items-center gap-2"
+              className="px-6 py-3 bg-[#fb7678] text-white rounded-lg font-medium hover:bg-[#fa6568] transition-colors inline-flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -226,7 +226,7 @@ const Certificates = () => {
                 className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200"
               >
                 {/* Card Header with Gradient */}
-                <div className="relative bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6">
+                <div className="relative bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] p-6">
                   <div className="absolute top-0 right-0 left-0 h-full bg-gradient-to-b from-transparent to-black/10"></div>
                   <div className="relative">
                     <h3 className="text-xl font-bold text-white line-clamp-2 mb-2">
@@ -247,7 +247,7 @@ const Certificates = () => {
                 <div className="p-6">
                   {/* Certification Type Badge */}
                   <div className="mb-4">
-                    <span className="px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs rounded-lg font-medium border border-indigo-100 capitalize">
+                    <span className="px-3 py-1.5 bg-[#ffe5e5] text-[#fb7678] text-xs rounded-lg font-medium border border-[#ffa8aa] capitalize">
                       {cert.certification_type.replace(/_/g, ' ')}
                     </span>
                   </div>
@@ -260,8 +260,8 @@ const Certificates = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
                         </svg>
                         <div>
-                          <p className="text-xs text-gray-500 font-medium">Certificate Number</p>
-                          <p className="text-sm text-gray-900">{cert.certificate_number}</p>
+                          <p className="text-xs text-[#ababab] font-medium">Certificate Number</p>
+                          <p className="text-sm text-[#3e2d2e]">{cert.certificate_number}</p>
                         </div>
                       </div>
                     )}
@@ -271,8 +271,8 @@ const Certificates = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         <div>
-                          <p className="text-xs text-gray-500 font-medium">Issued Date</p>
-                          <p className="text-sm text-gray-900">{new Date(cert.issued_date).toLocaleDateString()}</p>
+                          <p className="text-xs text-[#ababab] font-medium">Issued Date</p>
+                          <p className="text-sm text-[#3e2d2e]">{new Date(cert.issued_date).toLocaleDateString()}</p>
                         </div>
                       </div>
                     )}
@@ -282,8 +282,8 @@ const Certificates = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
-                          <p className="text-xs text-gray-500 font-medium">Expiry Date</p>
-                          <p className="text-sm text-gray-900">{new Date(cert.expiry_date).toLocaleDateString()}</p>
+                          <p className="text-xs text-[#ababab] font-medium">Expiry Date</p>
+                          <p className="text-sm text-[#3e2d2e]">{new Date(cert.expiry_date).toLocaleDateString()}</p>
                         </div>
                       </div>
                     )}
@@ -292,7 +292,7 @@ const Certificates = () => {
                         href={cert.document_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                        className="flex items-center gap-2 text-sm text-[#fb7678] hover:text-[#fa6568] font-medium"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
@@ -311,7 +311,7 @@ const Certificates = () => {
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => handleEdit(cert)}
-                      className="px-4 py-2.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center justify-center gap-1.5"
+                      className="px-4 py-2.5 bg-[#fb7678] text-white text-sm rounded-lg hover:bg-[#fa6568] transition-colors font-medium flex items-center justify-center gap-1.5"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -339,7 +339,7 @@ const Certificates = () => {
           <div className="fixed inset-0 z-50 overflow-y-auto">
             {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-gradient-to-br from-gray-900/70 via-indigo-900/70 to-purple-900/70 backdrop-blur-sm transition-opacity"
+              className="fixed inset-0 bg-gradient-to-br from-gray-900/70 via-[#fb7678]/30 to-[#ffa8aa]/30 backdrop-blur-sm transition-opacity"
               onClick={() => {
                 setShowAddModal(false);
                 setEditingCert(null);
@@ -363,7 +363,7 @@ const Certificates = () => {
                 </button>
 
                 {/* Header with Gradient */}
-                <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-6">
+                <div className="bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] px-8 py-6">
                   <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                     <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -372,7 +372,7 @@ const Certificates = () => {
                     </div>
                     {editingCert ? 'Edit Certification' : 'Add New Certification'}
                   </h2>
-                  <p className="text-indigo-100 mt-2 text-sm">Add your professional credentials to showcase your expertise</p>
+                  <p className="text-white/90 mt-2 text-sm">Add your professional credentials to showcase your expertise</p>
                 </div>
 
                 <div className="p-8 overflow-y-auto max-h-[calc(90vh-120px)]">
@@ -388,7 +388,7 @@ const Certificates = () => {
                         value={formData.certification_type}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
                       >
                         <option value="">Select a type</option>
                         {certificationTypes.map((type) => (
@@ -411,7 +411,7 @@ const Certificates = () => {
                         onChange={handleInputChange}
                         required
                         placeholder="e.g., Certified Pet First Aid & CPR"
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
                       />
                     </div>
 
@@ -426,7 +426,7 @@ const Certificates = () => {
                         value={formData.issuing_organization}
                         onChange={handleInputChange}
                         placeholder="e.g., American Red Cross"
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
                       />
                     </div>
 
@@ -441,7 +441,7 @@ const Certificates = () => {
                         value={formData.certificate_number}
                         onChange={handleInputChange}
                         placeholder="Optional certificate/license number"
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
                       />
                     </div>
 
@@ -456,9 +456,9 @@ const Certificates = () => {
                         value={formData.document_url}
                         onChange={handleInputChange}
                         placeholder="https://example.com/certificate.pdf"
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
                       />
-                      <p className="mt-2 text-xs text-gray-500">
+                      <p className="mt-2 text-xs text-[#ababab]">
                         Link to your certification document (PDF, image, etc.)
                       </p>
                     </div>
@@ -474,7 +474,7 @@ const Certificates = () => {
                           name="issued_date"
                           value={formData.issued_date}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
                         />
                       </div>
                       <div>
@@ -486,7 +486,7 @@ const Certificates = () => {
                           name="expiry_date"
                           value={formData.expiry_date}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
                         />
                       </div>
                     </div>
@@ -508,7 +508,7 @@ const Certificates = () => {
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                        className="flex-1 px-8 py-3.5 bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] text-white rounded-xl font-semibold hover:from-[#fa6568] hover:to-[#fe8c85] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

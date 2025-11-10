@@ -47,7 +47,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#fef5f6]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-6">
@@ -78,7 +78,7 @@ const Profile = () => {
               <h2 className="text-xl font-bold text-text-primary">{profile?.name}</h2>
               <p className="text-text-secondary">{profile?.email}</p>
               <div className="mt-2">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-50 text-text-info">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#ffe5e5] text-[#fb7678]">
                   {profile?.is_verified ? '👑 Pet Owner & Sitter' : '🐾 Pet Sitter'}
                 </span>
               </div>
@@ -88,6 +88,24 @@ const Profile = () => {
 
         {/* Settings Menu */}
         <div className="space-y-3 mb-6">
+                    {/* Switch to Owner Mode */}
+                    <button
+            onClick={handleSwitchToOwner}
+            className="w-full bg-gradient-to-r from-[#ffe5e5] to-[#fcf3f3] rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
+                <span className="text-xl">🐾</span>
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-text-primary">Owner Mode</p>
+                <p className="text-sm text-text-secondary">Switch to pet owner dashboard</p>
+              </div>
+            </div>
+            <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
           {/* My Profile */}
           <button
             onClick={() => setShowProfileModal(true)}
@@ -102,25 +120,6 @@ const Profile = () => {
               <div className="text-left">
                 <p className="font-semibold text-text-primary">My Profile</p>
                 <p className="text-sm text-text-secondary">View and edit your personal information</p>
-              </div>
-            </div>
-            <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-
-          {/* Switch to Owner Mode */}
-          <button
-            onClick={handleSwitchToOwner}
-            className="w-full bg-gradient-to-r from-primary-50 to-secondary-50 rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
-                <span className="text-xl">🐾</span>
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-text-primary">Owner Mode</p>
-                <p className="text-sm text-text-secondary">Switch to pet owner dashboard</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +226,7 @@ const Profile = () => {
             <div className="mt-6">
               <button
                 onClick={() => setShowProfileModal(false)}
-                className="w-full px-4 py-2 bg-primary-600 text-text-inverse rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                className="w-full px-4 py-2 bg-[#fb7678] text-text-inverse rounded-lg hover:bg-[#fa6568] transition-colors font-medium"
               >
                 Close
               </button>
@@ -268,7 +267,7 @@ const Profile = () => {
                   <p className="font-medium text-text-primary">Email Notifications</p>
                   <p className="text-sm text-text-secondary">Receive email updates</p>
                 </div>
-                <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary-600">
+                <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-[#fb7678]">
                   <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-6" />
                 </button>
               </div>
@@ -281,7 +280,7 @@ const Profile = () => {
             <div className="mt-6">
               <button
                 onClick={() => setShowSettingsModal(false)}
-                className="w-full px-4 py-2 bg-primary-600 text-text-inverse rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                className="w-full px-4 py-2 bg-[#fb7678] text-text-inverse rounded-lg hover:bg-[#fa6568] transition-colors font-medium"
               >
                 Close
               </button>

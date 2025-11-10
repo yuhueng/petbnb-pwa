@@ -16,7 +16,7 @@ const formatMessagePreview = (message) => {
     return {
       text: 'Booking Request',
       icon: (
-        <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
       )
@@ -105,9 +105,9 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
   if (!conversations || conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 p-8">
-        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-[#ffe5e5] to-[#fcf3f3] rounded-full flex items-center justify-center">
           <svg
-            className="w-10 h-10 text-indigo-600"
+            className="w-10 h-10 text-[#fb7678]"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -120,8 +120,8 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
             />
           </svg>
         </div>
-        <p className="text-lg font-bold text-gray-900 mb-2">No chats found!</p>
-        <p className="text-sm text-gray-600">Start a conversation with a sitter or owner</p>
+        <p className="text-lg font-bold text-[#3e2d2e] mb-2">No chats found!</p>
+        <p className="text-sm text-[#6d6d6d]">Start a conversation with a sitter or owner</p>
       </div>
     );
   }
@@ -138,7 +138,7 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
             onClick={() => onSelectConversation(conversation)}
             className={`p-4 cursor-pointer transition-all duration-200 ${
               isSelected
-                ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-600'
+                ? 'bg-gradient-to-r from-[#ffe5e5] to-[#fcf3f3] border-l-4 border-[#fb7678]'
                 : 'hover:bg-gray-50'
             }`}
           >
@@ -152,7 +152,7 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
                     className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-200"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold shadow-md">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-white font-semibold shadow-md">
                     {getInitials(otherParticipant?.name || '')}
                   </div>
                 )}
@@ -162,13 +162,13 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2 min-w-0">
-                    <p className="text-sm font-bold text-gray-900 truncate">
+                    <p className="text-sm font-bold text-[#3e2d2e] truncate">
                       {otherParticipant?.name}
                     </p>
                     {otherParticipant?.role && (
                       <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${
                         otherParticipant.role === 'sitter'
-                          ? 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700'
+                          ? 'bg-gradient-to-r from-[#ffe5e5] to-[#fcf3f3] text-[#fb7678]'
                           : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700'
                       }`}>
                         {otherParticipant.role === 'sitter' ? 'Pet Sitter' : 'Pet Owner'}
@@ -176,7 +176,7 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
                     )}
                   </div>
                   {lastMessage && (
-                    <p className="text-xs text-gray-500 font-medium flex-shrink-0">
+                    <p className="text-xs text-[#6d6d6d] font-medium flex-shrink-0">
                       {formatMessageTime(lastMessage.created_at)}
                     </p>
                   )}
@@ -205,7 +205,7 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
               {/* Unread badge */}
               {unreadCount > 0 && (
                 <div className="flex-shrink-0">
-                  <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full shadow-md">
+                  <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-white bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] rounded-full shadow-md">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 </div>

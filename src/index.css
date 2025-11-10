@@ -1,22 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  /* Primary Text Colors - Customizable */
-  --color-text-primary: #111827;    /* gray-900 - Main headings, primary text */
-  --color-text-secondary: #4B5563;  /* gray-600 - Secondary text, descriptions */
-  --color-text-tertiary: #9CA3AF;   /* gray-400 - Tertiary text, placeholders */
-  --color-text-disabled: #D1D5DB;   /* gray-300 - Disabled text */
-  --color-text-inverse: #FFFFFF;    /* white - Text on dark backgrounds */
+  /* Brand Colors - Coral Pink Theme */
+  --color-primary: #fb7678;         /* Coral pink - Primary brand color */
+  --color-primary-hover: #fa6568;   /* Hover state */
+  --color-primary-light: #fe8c85;   /* Light variant */
+  --color-primary-lighter: #ffa8aa; /* Lighter variant */
+  --color-primary-pale: #ffe5e5;    /* Pale background */
+  --color-primary-softest: #fcf3f3; /* Softest background */
 
-  /* Status Text Colors - Customizable */
+  /* Background Colors */
+  --color-bg-main: #fef5f6;         /* Main background - soft pink */
+  --color-bg-white: #FFFFFF;        /* White backgrounds */
+  --color-bg-gray: #f5f5f5;         /* Gray backgrounds */
+
+  /* Text Colors - From STYLES.md */
+  --color-text-primary: #3e2d2e;    /* Main headings, primary text */
+  --color-text-secondary: #6d6d6d;  /* Secondary text, descriptions */
+  --color-text-tertiary: #535353;   /* Tertiary text */
+  --color-text-light: #ababab;      /* Light text, inactive */
+  --color-text-disabled: #D1D5DB;   /* Disabled text */
+  --color-text-inverse: #FFFFFF;    /* Text on dark backgrounds */
+
+  /* Status Text Colors */
   --color-text-success: #047857;    /* green-700 - Success messages */
   --color-text-success-dark: #065F46;  /* green-800 - Success badges */
   --color-text-warning: #B45309;    /* amber-700 - Warning messages */
   --color-text-warning-dark: #92400E;  /* amber-800 - Warning badges */
   --color-text-error: #B91C1C;      /* red-700 - Error messages */
   --color-text-error-dark: #991B1B; /* red-800 - Error badges */
-  --color-text-info: #1D4ED8;       /* blue-700 - Info messages */
-  --color-text-info-dark: #1E40AF;  /* blue-800 - Info badges */
+  --color-text-info: #fb7678;       /* Coral pink - Info messages */
 }
 
 body {

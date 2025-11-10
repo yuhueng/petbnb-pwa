@@ -67,10 +67,10 @@ const BookingRequestCard = ({ bookingId, currentUserId, conversationId }) => {
 
   if (isLoading) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-2">
+      <div className="bg-[#fcf3f3] border border-[#ffa8aa] rounded-lg p-4 my-2">
         <div className="animate-pulse">
-          <div className="h-4 bg-blue-200 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-blue-200 rounded w-1/2"></div>
+          <div className="h-4 bg-[#ffe5e5] rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-[#ffe5e5] rounded w-1/2"></div>
         </div>
       </div>
     );
@@ -121,11 +121,11 @@ const BookingRequestCard = ({ bookingId, currentUserId, conversationId }) => {
   const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4 my-2 shadow-sm">
+    <div className="bg-gradient-to-br from-[#fcf3f3] to-[#ffe5e5] border-2 border-[#ffa8aa] rounded-lg p-4 my-2 shadow-sm">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -180,14 +180,14 @@ const BookingRequestCard = ({ bookingId, currentUserId, conversationId }) => {
 
         {/* Special Requests */}
         {booking.special_requests && (
-          <div className="mt-3 p-2 bg-white bg-opacity-50 rounded border border-blue-100">
+          <div className="mt-3 p-2 bg-white bg-opacity-50 rounded border border-[#ffa8aa]">
             <p className="text-xs font-medium text-text-secondary mb-1">Special Requests:</p>
             <p className="text-sm text-text-secondary">{booking.special_requests}</p>
           </div>
         )}
 
         {/* Requester Info */}
-        <div className="flex items-center mt-3 pt-3 border-t border-blue-200">
+        <div className="flex items-center mt-3 pt-3 border-t border-[#ffa8aa]">
           {booking.owner?.avatar_url ? (
             <img
               src={booking.owner.avatar_url}
@@ -195,8 +195,8 @@ const BookingRequestCard = ({ bookingId, currentUserId, conversationId }) => {
               className="w-8 h-8 rounded-full mr-2"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center mr-2">
-              <span className="text-text-info font-semibold text-sm">
+            <div className="w-8 h-8 rounded-full bg-[#ffe5e5] flex items-center justify-center mr-2">
+              <span className="text-[#fb7678] font-semibold text-sm">
                 {booking.owner?.name?.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -210,7 +210,7 @@ const BookingRequestCard = ({ bookingId, currentUserId, conversationId }) => {
 
       {/* Action Buttons (only for sitter and pending status) */}
       {isSitter && isPending && (
-        <div className="flex gap-2 mt-4 pt-4 border-t border-blue-200">
+        <div className="flex gap-2 mt-4 pt-4 border-t border-[#ffa8aa]">
           <button
             onClick={handleAccept}
             disabled={isAccepting || isDeclining}

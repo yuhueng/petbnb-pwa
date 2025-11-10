@@ -54,8 +54,8 @@ const SitterSetupModal = ({ isOpen, onClose, onSuccess }) => {
         {/* Modal */}
         <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
           <div className="mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">Become a Pet Sitter</h2>
-            <p className="mt-2 text-sm text-gray-600">
+            <h2 className="text-2xl font-bold text-[#3e2d2e]">Become a Pet Sitter</h2>
+            <p className="mt-2 text-sm text-[#6d6d6d]">
               To offer pet care services, we need a bit more information about you.
             </p>
           </div>
@@ -72,18 +72,18 @@ const SitterSetupModal = ({ isOpen, onClose, onSuccess }) => {
                 onChange={(e) => setBirthdate(e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#fb7678] focus:border-[#fb7678]"
               />
               <p className="mt-1 text-xs text-gray-500">You must be at least 18 years old</p>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-              <p className="text-sm text-blue-800">
+            <div className="bg-[#fcf3f3] border border-[#ffa8aa] rounded-md p-3">
+              <p className="text-sm text-[#3e2d2e]">
                 <strong>What happens next?</strong>
                 <br />
                 Once you enable sitter mode, you'll be able to:
               </p>
-              <ul className="mt-2 text-sm text-blue-700 list-disc list-inside space-y-1">
+              <ul className="mt-2 text-sm text-[#6d6d6d] list-disc list-inside space-y-1">
                 <li>Create service listings</li>
                 <li>Set your availability</li>
                 <li>Receive booking requests</li>
@@ -96,14 +96,14 @@ const SitterSetupModal = ({ isOpen, onClose, onSuccess }) => {
                 type="button"
                 onClick={onClose}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fb7678] disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                className="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#fb7678] hover:bg-[#fe8c85] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#fb7678] disabled:opacity-50"
               >
                 {isLoading ? 'Enabling...' : 'Enable Sitter Mode'}
               </button>

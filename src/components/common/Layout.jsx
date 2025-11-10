@@ -57,13 +57,13 @@ const Layout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-[#fef5f6] pb-20">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
+      <header className="bg-white shadow-[0px_1px_4px_rgba(0,0,0,0.25)] sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1
-              className="text-xl sm:text-2xl font-bold text-primary-600 cursor-pointer"
+              className="text-xl sm:text-2xl font-bold text-[#fb7678] cursor-pointer font-['Inter']"
               onClick={() => navigate('/owner/explore')}
             >
               PetBNB
@@ -72,14 +72,14 @@ const Layout = () => {
               {isAuthenticated ? (
                 <button
                   onClick={handleRoleSwitch}
-                  className="px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 border-2 rounded-md hover:bg-gray-100"
+                  className="px-4 py-2 text-sm font-semibold text-[#fb7678] bg-[#fcf3f3] border border-[#fb7678] rounded-[30px] hover:bg-[#f5f5f5] transition-all duration-300"
                 >
                   Switch to {activeRole === USER_ROLES.OWNER ? 'Sitter' : 'Owner'}
                 </button>
               ) : (
                 <button
                   onClick={() => navigate(isOwnerView ? '/owner/profile' : '/sitter/profile')}
-                  className="px-4 py-2 text-sm font-medium text-primary-600 bg-primary-600 rounded-md border-2 hover:bg-primary-700"
+                  className="px-4 py-2 text-sm font-bold text-white bg-[#fb7678] rounded-[30px] border border-[#fe8c85] hover:bg-[#fa6568] transition-all duration-300"
                 >
                   Login
                 </button>
@@ -94,23 +94,49 @@ const Layout = () => {
         <Outlet />
       </main>
 
-      {/* Mobile Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-20">
-        <div className="flex justify-around">
+      {/* Mobile Navigation - Matching the guide */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-[10px_3px_20px_rgba(0,0,0,0.25)] z-20">
+        <div className="flex justify-around items-center h-[78px] relative">
+          {/* Active indicator line */}
           {tabs.map((tab) => (
-            <Link
-              key={tab.path}
-              to={tab.path}
-              className={`flex-1 flex flex-col items-center py-3 text-xs font-medium ${
-                location.pathname === tab.path
-                  ? 'text-primary-600 bg-primary-50'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <span className="text-xl mb-1">{tab.icon}</span>
-              <span>{tab.name}</span>
-            </Link>
+            location.pathname === tab.path && (
+              <div
+                key={`line-${tab.path}`}
+                className="absolute top-[5px] h-[3px] w-10 bg-[#ff8c85] rounded-[2px]"
+                style={{
+                  left: `calc(${tabs.indexOf(tab) * (100 / tabs.length)}% + ${50 / tabs.length}% - 20px)`
+                }}
+              />
+            )
           ))}
+
+          {tabs.map((tab) => {
+            const isActive = location.pathname === tab.path;
+            return (
+              <Link
+                key={tab.path}
+                to={tab.path}
+                className="flex-1 flex flex-col items-center relative"
+              >
+                {/* Icon Circle */}
+                <div className={`w-[30px] h-[30px] rounded-full flex items-center justify-center text-base mb-1 ${
+                  isActive
+                    ? 'bg-[#ffe5e5] text-[#ff8c85]'
+                    : 'bg-[#f5f5f5] text-[#ababab]'
+                }`}>
+                  {tab.icon}
+                </div>
+                {/* Label */}
+                <span className={`text-xs font-${isActive ? 'bold' : 'semibold'} ${
+                  isActive
+                    ? 'text-[#ff8c85]'
+                    : 'text-[#ababab]'
+                }`}>
+                  {tab.name}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
     </div>

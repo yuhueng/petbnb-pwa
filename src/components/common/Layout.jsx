@@ -12,19 +12,19 @@ const Layout = () => {
   const isSitterView = location.pathname.startsWith('/sitter');
 
   const ownerTabs = [
-    { name: 'Explore', path: '/owner/explore', icon: '🔍' },
-    { name: 'Wishlist', path: '/owner/wishlist', icon: '❤️' },
-    { name: 'Bookings', path: '/owner/bookings', icon: '📅' },
-    { name: 'Messages', path: '/owner/messages', icon: '💬' },
-    { name: 'Profile', path: '/owner/profile', icon: '👤' },
+    { name: 'Explore', path: '/owner/explore', icon: '/icons/tabs/home-icon.svg' },
+    { name: 'Wishlist', path: '/owner/wishlist', icon: '/icons/tabs/listing-icon.svg' },
+    { name: 'Bookings', path: '/owner/bookings', icon: '/icons/tabs/certifications-icon.svg' },
+    { name: 'Messages', path: '/owner/messages', icon: '/icons/tabs/message-icon.svg' },
+    { name: 'Profile', path: '/owner/profile', icon: '/icons/tabs/profile-icon.svg' },
   ];
 
   const sitterTabs = [
-    { name: 'Home', path: '/sitter/dashboard', icon: '🏠' },
-    { name: 'Certificates', path: '/sitter/certificates', icon: '🎓' },
-    { name: 'Listing', path: '/sitter/listing', icon: '📝' },
-    { name: 'Messages', path: '/sitter/messages', icon: '💬' },
-    { name: 'Profile', path: '/sitter/profile', icon: '👤' },
+    { name: 'Home', path: '/sitter/dashboard', icon: '/icons/tabs/home-icon.svg' },
+    { name: 'Certificates', path: '/sitter/certificates', icon: '/icons/tabs/certifications-icon.svg' },
+    { name: 'Listing', path: '/sitter/listing', icon: '/icons/tabs/listing-icon.svg' },
+    { name: 'Messages', path: '/sitter/messages', icon: '/icons/tabs/message-icon.svg' },
+    { name: 'Profile', path: '/sitter/profile', icon: '/icons/tabs/profile-icon.svg' },
   ];
 
   const tabs = isOwnerView ? ownerTabs : isSitterView ? sitterTabs : [];
@@ -124,7 +124,12 @@ const Layout = () => {
                     ? 'bg-[#ffe5e5] text-[#ff8c85]'
                     : 'bg-[#f5f5f5] text-[#ababab]'
                 }`}>
-                  {tab.icon}
+                  <img
+                    src={tab.icon}
+                    alt={tab.name}
+                    className="w-[18px] h-[18px]"
+                    style={{ filter: isActive ? 'brightness(0) saturate(100%) invert(66%) sepia(41%) saturate(2291%) hue-rotate(315deg) brightness(102%) contrast(101%)' : 'brightness(0) saturate(100%) invert(71%) sepia(0%) saturate(0%) hue-rotate(177deg) brightness(95%) contrast(88%)' }}
+                  />
                 </div>
                 {/* Label */}
                 <span className={`text-xs font-${isActive ? 'bold' : 'semibold'} ${

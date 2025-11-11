@@ -367,25 +367,25 @@ const Dashboard = () => {
       case 'walk':
         return {
           color: '#ffd189',
-          icon: '🚶',
+          icon: <img src="/icons/common/walk-white-icon.svg" alt="Walk" className="w-6 h-6" />,
           bgGradient: 'from-[#ffd189] to-[#ffb347]',
         };
       case 'feed':
         return {
           color: '#a2d08a',
-          icon: '🍖',
+          icon: <img src="/icons/common/feed-white-icon.svg" alt="Feed" className="w-6 h-6" />,
           bgGradient: 'from-[#a2d08a] to-[#8bc574]',
         };
       case 'play':
         return {
           color: '#c0a7fe',
-          icon: '🎾',
+          icon: <img src="/icons/common/play-white-icon.svg" alt="Play" className="w-6 h-6" />,
           bgGradient: 'from-[#c0a7fe] to-[#a88fec]',
         };
       default:
         return {
           color: '#ffd189',
-          icon: '📝',
+          icon: <img src="/icons/common/add-icon.svg" alt="Add" className="w-6 h-6" />,
           bgGradient: 'from-[#ffd189] to-[#ffb347]',
         };
     }
@@ -693,24 +693,25 @@ const Dashboard = () => {
                       <div className="flex-shrink-0 w-[106px]">
                         <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-300"
                             onClick={() => handleActivityClick('walk')}>
-                          
+
                           {/* Top colored bar */}
                           <div className="w-full h-[15px] bg-[#ffc369] rounded-t-[10px]"></div>
-                          
+
                           {/* Content - using flex column */}
                           <div className="flex flex-col items-center px-3 pb-8 pt-1.5">
                             {/* Title */}
                             <p className="text-base font-bold text-[#ffc369] mb-2">Walk</p>
-                            
+
                             {/* Main icon box */}
                             <div className="w-[54px] h-[54px] rounded-[10px] bg-gradient-to-br from-[#ffc36933] to-[#ffb34733] flex items-center justify-center text-2xl">
-                              🐕
+                              <img src="/icons/common/walk-icon.svg" alt="Pet" className="w-8 h-8" />
                             </div>
-                            
+
                             {/* Bottom circular icon - positioned relative to flow */}
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-[#ffc369] to-[#ffb347] flex items-center justify-center text-2xl shadow-md">
-                              🚶
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
+                              <img src="/icons/common/add-yellow-icon.svg" alt="Feed" className="w-10 h-10 shadow-md bg-white rounded-full" />
                             </div>
+                      
                           </div>
                         </div>
                       </div>
@@ -720,25 +721,25 @@ const Dashboard = () => {
                       <div className="flex-shrink-0 w-[106px]">
                         <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-300"
                             onClick={() => handleActivityClick('feed')}>
-                          
+
                           {/* Top colored bar */}
                           <div className="w-full h-[15px] bg-[#a2d08a] rounded-t-[10px]"></div>
-                          
+
                           {/* Content - using flex column */}
                           <div className="flex flex-col items-center px-3 pb-8 pt-1.5">
                             {/* Title */}
                             <p className="text-base font-bold text-[#a2d08a] mb-2">Feed</p>
-                            
+
                             {/* Main icon box */}
                             <div className="w-[54px] h-[54px] rounded-[10px] bg-gradient-to-br from-[#a2d08a33] to-[#8bc57433] flex items-center justify-center text-2xl">
-                              🍽️
+                              <img src="/icons/common/feed-icon.svg" alt="Pet" className="w-8 h-8" />
                             </div>
                           </div>
-                          
+
                           {/* Floating bottom icon - positioned absolutely */}
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-[#a2d08a] to-[#8bc574] flex items-center justify-center text-2xl shadow-md">
-                            🍖
-                          </div>
+                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
+                              <img src="/icons/common/add-green-icon.svg" alt="Feed" className="w-10 h-10 shadow-md bg-white rounded-full" />
+                            </div>
                         </div>
                       </div>
 
@@ -747,25 +748,25 @@ const Dashboard = () => {
                       <div className="flex-shrink-0 w-[106px]">
                         <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-300"
                             onClick={() => handleActivityClick('play')}>
-                          
+
                           {/* Top colored bar */}
                           <div className="w-full h-[15px] bg-[#c0a7fe] rounded-t-[10px]"></div>
-                          
+
                           {/* Content - using flex column */}
                           <div className="flex flex-col items-center px-3 pb-8 pt-1.5">
                             {/* Title */}
                             <p className="text-base font-bold text-[#c0a7fe] mb-2">Play</p>
-                            
+
                             {/* Main icon box */}
                             <div className="w-[54px] h-[54px] rounded-[10px] bg-gradient-to-br from-[#c0a7fe33] to-[#a88fec33] flex items-center justify-center text-2xl">
-                              ⚽
+                              <img src="/icons/common/play-icon.svg" alt="Pet" className="w-8 h-8" />
                             </div>
                           </div>
-                          
+
                           {/* Floating bottom icon - positioned absolutely */}
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-[#c0a7fe] to-[#a88fec] flex items-center justify-center text-xl shadow-md">
-                            🎾
-                          </div>
+                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
+                              <img src="/icons/common/add-purple-icon.svg" alt="Feed" className="w-10 h-10 shadow-md bg-white rounded-full" />
+                            </div>
                         </div>
                       </div>
 
@@ -1023,10 +1024,10 @@ const Dashboard = () => {
                 {activityModalStep === 1 && (
                   <div className="p-8">
                     <div className="text-center mb-6">
-                      <div className="text-5xl mb-4">
-                        {selectedActivity === 'walk' && '🚶'}
-                        {selectedActivity === 'feed' && '🍖'}
-                        {selectedActivity === 'play' && '🎾'}
+                      <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                        {selectedActivity === 'walk' && <img src="/icons/common/walk-icon.svg" alt="Walk" className="w-16 h-16" />}
+                        {selectedActivity === 'feed' && <img src="/icons/common/feed-icon.svg" alt="Feed" className="w-16 h-16" />}
+                        {selectedActivity === 'play' && <img src="/icons/common/play-icon.svg" alt="Play" className="w-16 h-16" />}
                       </div>
                       <h2 className="text-xl font-bold text-[#3e2d2e] mb-2">
                         {getActivityQuestion(selectedActivity)}
@@ -1152,7 +1153,15 @@ const Dashboard = () => {
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
             <div className="relative bg-white rounded-[30px] shadow-2xl p-8 max-w-sm w-full text-center animate-[bounce_0.6s_ease-in-out]">
-              <div className="text-7xl mb-4">🎉</div>
+              {/* <div className="text-7xl mb-4">🎉</div>
+               */}
+              <div className="mb-4 flex justify-center">
+                <img 
+                  src="/public/icons/common/pawtastic-icon.svg"
+                  alt="Pawtastic" 
+                  className="w-[100px] h-[100px]"
+                />
+              </div>
               <h2 className="text-3xl font-extrabold text-[#fb7678] mb-2">
                 Pawtastic!
               </h2>

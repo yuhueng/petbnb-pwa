@@ -846,6 +846,87 @@ COMMENT ON COLUMN pet_activities.activity_timestamp IS 'When the activity was pe
 COMMENT ON COLUMN pet_activities.created_at IS 'When the record was created in the database';
 
 -- ============================================
+-- PET CARE REQUESTS - Owner Photo Requests with Spam Prevention
+-- ============================================
+-- This table tracks photo requests sent by pet owners to sitters
+-- Implements 15-minute cooldown per request type to prevent spam
+
+CREATE TABLE pet_care_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- Foreign Keys
+  booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  pet_owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  pet_sitter_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+
+  -- Request Details
+  request_type TEXT NOT NULL CHECK (request_type IN ('walk', 'feed', 'play')),
+
+  -- Message Tracking
+  conversation_id UUID REFERENCES conversations(id),
+  message_id UUID REFERENCES messages(id),
+
+  -- Timestamps
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================
+-- INDEXES - For spam prevention and performance
+-- ============================================
+
+CREATE INDEX idx_pet_care_requests_booking ON pet_care_requests(booking_id);
+CREATE INDEX idx_pet_care_requests_owner ON pet_care_requests(pet_owner_id);
+CREATE INDEX idx_pet_care_requests_created ON pet_care_requests(created_at DESC);
+
+-- Composite index for spam prevention queries (check recent requests by owner for specific booking and type)
+CREATE INDEX idx_pet_care_requests_spam_check ON pet_care_requests(pet_owner_id, booking_id, request_type, created_at DESC);
+
+-- ============================================
+-- ROW LEVEL SECURITY (RLS) - Enable
+-- ============================================
+
+ALTER TABLE pet_care_requests ENABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- RLS POLICIES
+-- ============================================
+
+-- Owners can view their own requests
+CREATE POLICY "Owners can view their requests"
+  ON pet_care_requests FOR SELECT
+  TO authenticated
+  USING (auth.uid() = pet_owner_id);
+
+-- Sitters can view requests for their bookings
+CREATE POLICY "Sitters can view requests for their bookings"
+  ON pet_care_requests FOR SELECT
+  TO authenticated
+  USING (auth.uid() = pet_sitter_id);
+
+-- Owners can create requests for their bookings
+CREATE POLICY "Owners can create requests"
+  ON pet_care_requests FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    auth.uid() = pet_owner_id AND
+    EXISTS (
+      SELECT 1 FROM bookings
+      WHERE bookings.id = pet_care_requests.booking_id
+      AND bookings.pet_owner_id = auth.uid()
+      AND bookings.status IN ('confirmed', 'in_progress')
+    )
+  );
+
+-- ============================================
+-- COMMENTS - Documentation
+-- ============================================
+
+COMMENT ON TABLE pet_care_requests IS 'Tracks photo requests sent by pet owners to sitters. Implements 15-minute spam prevention per request type.';
+COMMENT ON COLUMN pet_care_requests.request_type IS 'Type of photo request: walk, feed, or play';
+COMMENT ON COLUMN pet_care_requests.message_id IS 'Reference to the message sent to the sitter';
+COMMENT ON COLUMN pet_care_requests.created_at IS 'When the request was made (used for spam prevention)';
+
+-- ============================================
 -- STORAGE: Certification Images Bucket
 -- ============================================
 

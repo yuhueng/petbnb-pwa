@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { wishlistService } from '@/services/wishlistService';
-import SitterCard from '@/components/owner/SitterCard';
 import ListingDetailModal from '@/components/owner/ListingDetailModal';
 import ProfileModal from '@/components/common/ProfileModal';
 import toast from 'react-hot-toast';
@@ -116,11 +115,11 @@ const Wishlist = () => {
             d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
           />
         </svg>
-        <h2 className="text-2xl font-bold text-gray-900 mb-3">Please log in to view wishlist</h2>
-        <p className="text-gray-600 mb-6">You need to be logged in to save your favorite sitters</p>
+        <h2 className="text-2xl font-bold text-[#3e2d2e] mb-3">Please log in to view wishlist</h2>
+        <p className="text-[#6d6d6d] mb-6">You need to be logged in to save your favorite sitters</p>
         <button
           onClick={() => navigate('/owner/profile')}
-          className="px-6 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-xl transition-all"
+          className="px-6 py-3 bg-[#fb7678] text-white rounded-lg font-medium hover:bg-[#fa6568] transition-colors"
         >
           Log In
         </button>
@@ -128,83 +127,143 @@ const Wishlist = () => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-4 sm:px-6 lg:px-8 py-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="w-14 h-14 bg-gradient-to-r from-red-500 via-pink-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg">
-              <svg
-                className="w-8 h-8 text-white"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">My Wishlist</h1>
-              <p className="text-gray-600 mt-1">
-                {wishlistItems.length} {wishlistItems.length === 1 ? 'saved sitter' : 'saved sitters'}
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#fef5f6]">
+      {/* Mobile-First Container - 393px max width */}
+      <div className="max-w-[393px] mx-auto px-[22px] py-[82px] pb-[50px]">
+        {/* Page Header */}
+        <header className="flex justify-center items-center gap-[66px] mb-[22px]">
+          <h1 className="text-[20px] font-semibold leading-[1.2] text-[#3e2d2e] m-0">
+            My Wishlist
+          </h1>
+        </header>
 
-        {/* Empty State */}
-        {wishlistItems.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-            <div className="flex justify-center mb-6">
-              <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-16 h-16 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-              </div>
+        {/* Main Content */}
+        <main>
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb7678]"></div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">No favorites yet</h2>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              Start exploring and save your favorite pet sitters by clicking the heart icon on their listings.
-            </p>
-            <button
-              onClick={() => navigate('/owner/explore')}
-              className="px-8 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              Explore Sitters
-            </button>
-          </div>
-        ) : (
-          /* Wishlist Grid */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {wishlistItems.map((item) => (
-              <SitterCard
-                key={item.id}
-                listing={item.listing}
-                onClick={() => handleCardClick(item.listing)}
-                isInWishlist={wishlistIds.has(item.listing.id)}
-                onToggleWishlist={(e) => handleToggleWishlist(e, item.listing.id)}
-              />
-            ))}
-          </div>
-        )}
+          )}
+
+          {/* Your Wishlist Section */}
+          {!isLoading && (
+            <section>
+              <h2 className="text-[18px] font-semibold leading-[1.2] text-[#3e2d2e] mb-[12px] m-0">
+                Your Favorites
+              </h2>
+
+              {/* Empty State */}
+              {wishlistItems.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg
+                    className="w-16 h-16 text-[#7d7d7d] mx-auto mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                  <p className="text-[#7d7d7d] text-sm mb-2">No favorites yet</p>
+                  <p className="text-[#7d7d7d] text-xs mt-2 mb-4">
+                    Start exploring and click the heart to save sitters
+                  </p>
+                  <button
+                    onClick={() => navigate('/owner/explore')}
+                    className="px-6 py-2 bg-[#fb7678] text-white text-sm rounded-[20px] hover:bg-[#fa6568] transition-colors"
+                  >
+                    Explore Sitters
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-[10px]">
+                  {wishlistItems.map((item) => (
+                    <article
+                      key={item.id}
+                      className="flex flex-col group cursor-pointer px-1 pt-1 pb-3 rounded-[10px] bg-white"
+                      onClick={() => handleCardClick(item.listing)}
+                    >
+                      {/* Listing Image */}
+                      {item.listing.cover_image_url || item.listing.image_urls?.[0] ? (
+                        <div className="relative">
+                          <img
+                            src={item.listing.cover_image_url || item.listing.image_urls?.[0]}
+                            alt={item.listing.title}
+                            className="w-full h-[139px] rounded-[10px] object-cover shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)]"
+                          />
+                          {/* Remove from Wishlist Button */}
+                          <button
+                            onClick={(e) => handleToggleWishlist(e, item.listing.id)}
+                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-md hover:scale-110 transition-transform"
+                            aria-label="Remove from wishlist"
+                          >
+                            <svg className="w-5 h-5 text-[#fb7678]" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative w-full h-[139px] rounded-[10px] bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)] flex items-center justify-center">
+                          <svg className="w-12 h-12 text-white opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                          </svg>
+                          {/* Remove from Wishlist Button */}
+                          <button
+                            onClick={(e) => handleToggleWishlist(e, item.listing.id)}
+                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-md hover:scale-110 transition-transform"
+                            aria-label="Remove from wishlist"
+                          >
+                            <svg className="w-5 h-5 text-[#fb7678]" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Listing Info */}
+                      <div className="pt-[6px] flex flex-col gap-[3px] p-1">
+                        <h3 className="text-[12px] font-semibold leading-[1.2] text-[#3e2d2e] m-0 line-clamp-1">
+                          {item.listing.title || 'Pet Sitting Service'}
+                        </h3>
+                        {item.listing.city && item.listing.state && (
+                          <p className="text-[10px] font-semibold leading-[1.2] text-[#7d7d7d] m-0">
+                            {item.listing.city}, {item.listing.state}
+                          </p>
+                        )}
+                        {(item.listing.price_per_day || item.listing.price_per_hour) && (
+                          <p className="text-[10px] font-semibold leading-[1.2] text-[#fb7678] m-0">
+                            {item.listing.price_per_day
+                              ? `$${(item.listing.price_per_day / 100).toFixed(0)}/day`
+                              : `$${(item.listing.price_per_hour / 100).toFixed(0)}/hour`}
+                          </p>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+        </main>
+
+        {/* Responsive behavior for extra small screens */}
+        <style jsx>{`
+          @media (max-width: 380px) {
+            .grid-cols-2 {
+              grid-template-columns: 1fr;
+              justify-items: center;
+            }
+            article {
+              max-width: 250px;
+            }
+          }
+        `}</style>
       </div>
 
       {/* Listing Detail Modal */}

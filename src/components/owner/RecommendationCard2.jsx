@@ -124,79 +124,78 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
       onClick={onClick}
       className={`
         bg-white rounded-2xl shadow-md hover:shadow-lg
-        p-4 flex gap-4
+        p-2 flex gap-4
         cursor-pointer transition-all duration-300
         hover:-translate-y-0.5
         ${compact ? 'w-full' : 'mx-4 my-3'}
       `}
     >
-      {/* Left Side - Profile Image */}
-      <div className="relative flex-shrink-0">
-        {hasImage ? (
-          <img
-            src={profileImage}
-            alt={sitterName}
-            className="w-24 h-24 rounded-2xl object-cover"
-            onError={(e) => {
-              e.target.classList.add('hidden');
-              e.target.nextElementSibling.classList.remove('hidden');
-            }}
-          />
-        ) : null}
-        <div
-          className={`
-            w-24 h-24 rounded-2xl
-            bg-gradient-to-br from-[#fb7678] to-[#ffa8aa]
-            flex items-center justify-center
-            text-white font-bold text-2xl
-            ${hasImage ? 'hidden' : 'flex'}
-          `}
-        >
-          {getInitials(sitterName)}
+      {/* All Details */}
+      <div className="flex-1 flex flex-col justify-between min-w-0">
+        {/* Top Section: Profile Image */}
+        <div className="relative flex-shrink-0">
+          {hasImage ? (
+            <img
+              src={profileImage}
+              alt={sitterName}
+              className=" h-50 rounded-2xl object-cover"
+              onError={(e) => {
+                e.target.classList.add('hidden');
+                e.target.nextElementSibling.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div
+            className={`
+              w-24 h-24 rounded-2xl
+              bg-gradient-to-br from-[#fb7678] to-[#ffa8aa]
+              flex items-center justify-center
+              text-white font-bold text-2xl
+              ${hasImage ? 'hidden' : 'flex'}
+            `}
+          >
+            {getInitials(sitterName)}
+          </div>
+
+
+          {/* Top Section: Wishlist Heart Button */}
+          {onToggleWishlist && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWishlist(e);
+              }}
+              className="
+                absolute -top-1 -right-1
+                w-7 h-7 rounded-full bg-white
+                border-0 shadow-md
+                flex items-center justify-center
+                cursor-pointer transition-all duration-200
+                hover:scale-110
+              "
+              aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            >
+              <svg
+                className="w-4 h-4"
+                style={{
+                  fill: isInWishlist ? '#fb7678' : 'none',
+                  stroke: isInWishlist ? '#fb7678' : '#6d6d6d',
+                  strokeWidth: isInWishlist ? 0 : 2,
+                }}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
+            </button>
+          )}
         </div>
 
-
-        {/* Wishlist Heart Button */}
-        {onToggleWishlist && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleWishlist(e);
-            }}
-            className="
-              absolute -top-2 -right-2
-              w-7 h-7 rounded-full bg-white
-              border-0 shadow-md
-              flex items-center justify-center
-              cursor-pointer transition-all duration-200
-              hover:scale-110
-            "
-            aria-label={isInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-          >
-            <svg
-              className="w-4 h-4"
-              style={{
-                fill: isInWishlist ? '#fb7678' : 'none',
-                stroke: isInWishlist ? '#fb7678' : '#6d6d6d',
-                strokeWidth: isInWishlist ? 0 : 2,
-              }}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
-            </svg>
-          </button>
-        )}
-      </div>
-
-
-      {/* Right Side - All Details */}
-      <div className="flex-1 flex flex-col justify-between min-w-0">
-        {/* Top Section: Name, Location, and Rating */}
-        <div>
+        {/* Bottom Section: Name, Location, and Rating */}
+        <div className='p-2'> 
           <div className="flex justify-between items-start gap-2 mb-1">
             <h3 className="font-bold text-lg leading-tight text-black">
               {sitterName}
@@ -228,29 +227,31 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
 
 
         {/* Bottom Section: Price and Distance */}
-        <div className="flex justify-between items-center">
-          {/* Price */}
-          <div className="flex items-center gap-0.5 w-[120px] h-[30px]">
-            <img 
-              src="/icons/common/money-icon.svg" 
-              alt="Price" 
-              className="w-5 h-5"
-            />
-            <span className="font-bold text-[#fb7678] text-[15px] whitespace-nowrap overflow-hidden">
-              {priceDisplay}
-            </span>
-          </div>
-          
-          {/* Distance */}
-          <div className="flex items-center gap-0.5 w-[120px] h-[30px]">
-            <img 
-              src="/icons/common/distance-icon.svg" 
-              alt="Location" 
-              className="w-7 h-7"
-            />
-            <span className="font-bold text-[#fb7678] text-[15px] whitespace-nowrap overflow-hidden">
-              2.5km Away
-            </span>
+        <div className='p-2'>
+          <div className="flex justify-between items-center">
+            {/* Price */}
+            <div className="flex items-center gap-0.5 w-[120px] h-[30px]">
+              <img 
+                src="/icons/common/money-icon.svg" 
+                alt="Price" 
+                className="w-5 h-5"
+              />
+              <span className="font-bold text-[#fb7678] text-[12px] whitespace-nowrap overflow-hidden">
+                {priceDisplay}
+              </span>
+            </div>
+            
+            {/* Distance */}
+            <div className="flex items-center gap-0.5 w-[120px] h-[30px]">
+              <img 
+                src="/icons/common/distance-icon.svg" 
+                alt="Location" 
+                className="w-7 h-7"
+              />
+              <span className="font-bold text-[#fb7678] text-[12px] whitespace-nowrap overflow-hidden">
+                2.5km Away
+              </span>
+            </div>
           </div>
         </div>
       </div>

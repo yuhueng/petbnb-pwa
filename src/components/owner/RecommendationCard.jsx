@@ -236,7 +236,7 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
               alt="Price" 
               className="w-5 h-5"
             />
-            <span className="font-bold text-[#fb7678] text-[15px] whitespace-nowrap overflow-hidden">
+            <span className="font-bold text-[#fb7678] text-[12px] whitespace-nowrap overflow-hidden">
               {priceDisplay}
             </span>
           </div>
@@ -248,7 +248,7 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
               alt="Location" 
               className="w-7 h-7"
             />
-            <span className="font-bold text-[#fb7678] text-[15px] whitespace-nowrap overflow-hidden">
+            <span className="font-bold text-[#fb7678] text-[12px] whitespace-nowrap overflow-hidden">
               2.5km Away
             </span>
           </div>

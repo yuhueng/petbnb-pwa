@@ -429,8 +429,8 @@ const Profile = () => {
             className="w-full bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-[#ffe5e5] flex items-center justify-center">
-                <svg className="w-5 h-5 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
@@ -450,8 +450,8 @@ const Profile = () => {
             className="w-full bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-[#ffe5e5] flex items-center justify-center">
-                <svg className="w-5 h-5 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
+                <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>

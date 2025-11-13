@@ -5,13 +5,18 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import LoginRegisterTabs from '@/components/common/LoginRegisterTabs';
 import profileService from '@/services/profileService';
+import reviewService from '@/services/reviewService';
 
 const Profile = () => {
   const { profile, switchRole, logout, isAuthenticated, user, updateUserProfile } = useAuthStore();
   const navigate = useNavigate();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewStats, setReviewStats] = useState({ averageRating: 0, totalReviews: 0 });
+  const [loadingReviews, setLoadingReviews] = useState(false);
 
   // Profile edit state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -36,6 +41,26 @@ const Profile = () => {
     };
     fetchStats();
   }, [showProfileModal, user]);
+
+  // Fetch reviews when reviews modal opens
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (showReviewsModal && user) {
+        setLoadingReviews(true);
+        try {
+          const { reviews: fetchedReviews, averageRating, totalReviews } = await reviewService.getReviewsBySitter(user.id);
+          setReviews(fetchedReviews);
+          setReviewStats({ averageRating, totalReviews });
+        } catch (error) {
+          console.error('Error fetching reviews:', error);
+          toast.error('Failed to load reviews');
+        } finally {
+          setLoadingReviews(false);
+        }
+      }
+    };
+    fetchReviews();
+  }, [showReviewsModal, user]);
 
   // Initialize profile form when opening modal
   useEffect(() => {
@@ -265,6 +290,27 @@ const Profile = () => {
               <div className="text-left">
                 <p className="font-semibold text-text-primary">My Profile</p>
                 <p className="text-sm text-text-secondary">View and edit your personal information</p>
+              </div>
+            </div>
+            <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          {/* Reviews */}
+          <button
+            onClick={() => setShowReviewsModal(true)}
+            className="w-full bg-white rounded-lg shadow-sm p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center">
+                <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-text-primary">Reviews</p>
+                <p className="text-sm text-text-secondary">View ratings and feedback from clients</p>
               </div>
             </div>
             <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -591,6 +637,154 @@ const Profile = () => {
               <button
                 onClick={() => setShowSettingsModal(false)}
                 className="w-full px-4 py-2 bg-[#fb7678] text-text-inverse rounded-lg hover:bg-[#fa6568] transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reviews Modal */}
+      {showReviewsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[15px] shadow-xl max-w-[95vw] sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-[15px] z-10">
+              <div>
+                <h3 className="text-xl font-bold text-[#3e2d2e]">My Reviews</h3>
+                <p className="text-sm text-[#6d6d6d] mt-1">
+                  {reviewStats.totalReviews} {reviewStats.totalReviews === 1 ? 'review' : 'reviews'} • {reviewStats.averageRating.toFixed(1)} ⭐ average
+                </p>
+              </div>
+              <button
+                onClick={() => setShowReviewsModal(false)}
+                className="text-[#6d6d6d] hover:text-[#3e2d2e] transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              {loadingReviews ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb7678]"></div>
+                </div>
+              ) : reviews.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-20 h-20 mx-auto mb-4 bg-[#ffe5e5] rounded-full flex items-center justify-center">
+                    <svg className="w-10 h-10 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold text-[#3e2d2e] mb-2">No reviews yet</h4>
+                  <p className="text-[#6d6d6d] text-sm">You haven't received any reviews from clients.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="bg-gradient-to-br from-[#ffe5e5]/30 to-[#fcf3f3] rounded-lg p-4 border border-gray-100">
+                      {/* Reviewer Info */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          {review.reviewer?.avatar_url ? (
+                            <img
+                              src={review.reviewer.avatar_url}
+                              alt={review.reviewer.name}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-[#ffe5e5] flex items-center justify-center">
+                              <span className="text-lg text-[#fb7678] font-semibold">
+                                {review.reviewer?.name?.charAt(0).toUpperCase() || '?'}
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <p className="font-semibold text-[#3e2d2e]">{review.reviewer?.name || 'Anonymous'}</p>
+                            <p className="text-xs text-[#6d6d6d]">
+                              {new Date(review.created_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        {/* Rating Stars */}
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg
+                              key={star}
+                              className={`w-4 h-4 ${star <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Review Title */}
+                      {review.title && (
+                        <h4 className="font-semibold text-[#3e2d2e] mb-2">{review.title}</h4>
+                      )}
+
+                      {/* Review Comment */}
+                      {review.comment && (
+                        <p className="text-[#6d6d6d] text-sm leading-relaxed mb-3">{review.comment}</p>
+                      )}
+
+                      {/* Booking Info */}
+                      {review.booking && (
+                        <div className="flex items-center gap-2 text-xs text-[#6d6d6d] mb-3">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>
+                            {new Date(review.booking.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(review.booking.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Sitter Response */}
+                      {review.response && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="flex items-start gap-2">
+                            <div className="w-8 h-8 rounded-full bg-[#fb7678] flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm text-white font-semibold">
+                                {profile?.name?.charAt(0).toUpperCase() || 'Y'}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-[#3e2d2e] text-sm mb-1">Your Response:</p>
+                              <p className="text-[#6d6d6d] text-sm">{review.response}</p>
+                              <p className="text-xs text-[#6d6d6d] mt-1">
+                                {new Date(review.response_at).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-200 p-6 bg-[#fef5f6] rounded-b-[15px]">
+              <button
+                onClick={() => setShowReviewsModal(false)}
+                className="w-full px-4 py-3 bg-[#fb7678] text-white rounded-lg hover:bg-[#fa6568] transition-colors font-medium"
               >
                 Close
               </button>

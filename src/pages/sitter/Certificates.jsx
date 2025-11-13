@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { certificationService } from '@/services/certificationService';
+import toast from 'react-hot-toast';
 
 const Certificates = () => {
   const navigate = useNavigate();
@@ -10,6 +11,10 @@ const Certificates = () => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCert, setEditingCert] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [certificateImage, setCertificateImage] = useState(null);
+  const [certificateImagePreview, setCertificateImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -47,6 +52,7 @@ const Certificates = () => {
       setCertifications(data);
     } catch (error) {
       console.error('Error fetching certifications:', error);
+      toast.error('Failed to load certifications');
     } finally {
       setLoading(false);
     }
@@ -60,36 +66,116 @@ const Certificates = () => {
     }));
   };
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please select a valid image file (PNG, JPG, or WEBP)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5 MB');
+      return;
+    }
+
+    setCertificateImage(file);
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setCertificateImagePreview(previewUrl);
+  };
+
+  const handleRemoveImage = () => {
+    if (certificateImagePreview) {
+      URL.revokeObjectURL(certificateImagePreview);
+    }
+    setCertificateImage(null);
+    setCertificateImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate required fields
+    if (!formData.certification_type) {
+      toast.error('Please select a certification type');
+      return;
+    }
+
+    if (!formData.certification_name) {
+      toast.error('Please enter the certification name');
+      return;
+    }
+
+    if (!formData.issued_date) {
+      toast.error('Please enter the issued date');
+      return;
+    }
+
+    if (!formData.expiry_date) {
+      toast.error('Please enter the expiry date');
+      return;
+    }
+
+    // Validate that expiry date is after issued date
+    if (new Date(formData.expiry_date) <= new Date(formData.issued_date)) {
+      toast.error('Expiry date must be after the issued date');
+      return;
+    }
+
     try {
+      setUploadingImage(true);
+      let documentUrl = formData.document_url;
+
+      // Upload image if selected
+      if (certificateImage) {
+        const uploadResult = await certificationService.uploadCertificateImage(
+          certificateImage,
+          user.id
+        );
+
+        if (uploadResult.success) {
+          documentUrl = uploadResult.url;
+        } else {
+          throw new Error('Failed to upload certificate image');
+        }
+      }
+
       const certData = {
         ...formData,
+        document_url: documentUrl,
         sitter_id: user.id,
       };
 
       if (editingCert) {
-        await certificationService.updateCertification(editingCert.id, formData);
+        await certificationService.updateCertification(editingCert.id, {
+          ...formData,
+          document_url: documentUrl,
+        });
+        toast.success('Certification updated successfully!');
       } else {
         await certificationService.createCertification(certData);
+        toast.success('Certification added successfully!');
       }
 
       // Reset form and close modal
-      setFormData({
-        certification_type: '',
-        certification_name: '',
-        issuing_organization: '',
-        certificate_number: '',
-        document_url: '',
-        issued_date: '',
-        expiry_date: '',
-      });
+      resetForm();
       setShowAddModal(false);
       setEditingCert(null);
       fetchCertifications();
     } catch (error) {
       console.error('Error saving certification:', error);
-      alert('Failed to save certification. Please try again.');
+      toast.error('Failed to save certification. Please try again.');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -104,6 +190,12 @@ const Certificates = () => {
       issued_date: cert.issued_date || '',
       expiry_date: cert.expiry_date || '',
     });
+
+    // Set preview if there's an existing image
+    if (cert.document_url) {
+      setCertificateImagePreview(cert.document_url);
+    }
+
     setShowAddModal(true);
   };
 
@@ -114,15 +206,15 @@ const Certificates = () => {
 
     try {
       await certificationService.deleteCertification(certId);
+      toast.success('Certification deleted');
       fetchCertifications();
     } catch (error) {
       console.error('Error deleting certification:', error);
-      alert('Failed to delete certification. Please try again.');
+      toast.error('Failed to delete certification');
     }
   };
 
-  const handleAddNew = () => {
-    setEditingCert(null);
+  const resetForm = () => {
     setFormData({
       certification_type: '',
       certification_name: '',
@@ -132,7 +224,19 @@ const Certificates = () => {
       issued_date: '',
       expiry_date: '',
     });
+    handleRemoveImage();
+  };
+
+  const handleAddNew = () => {
+    setEditingCert(null);
+    resetForm();
     setShowAddModal(true);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB'); // DD/MM/YYYY format
   };
 
   if (!isAuthenticated) {
@@ -164,365 +268,344 @@ const Certificates = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fef5f6] to-[#fcf3f3]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#3e2d2e]">My Certifications</h1>
-            <p className="text-[#6d6d6d] mt-1 text-sm sm:text-base">Showcase your professional qualifications</p>
-          </div>
-          <button
-            onClick={handleAddNew}
-            className="px-3 py-3 sm:px-6 bg-[#fb7678] text-white rounded-lg font-medium hover:bg-[#fa6568] transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="hidden sm:inline">Add Certification</span>
-          </button>
-        </div>
+    <div className="min-h-screen bg-[#fef5f6]">
+      {/* Mobile-First Container - 393px max width */}
+      <div className="max-w-[393px] mx-auto px-[22px] py-[82px] pb-[50px]">
+        {/* Page Header */}
+        <header className="flex justify-center items-center gap-[66px] mb-[22px]">
+          <h1 className="text-[20px] font-semibold leading-[1.2] text-[#3e2d2e] m-0">
+            My Certifications
+          </h1>
+        </header>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb7678]"></div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!loading && certifications.length === 0 && (
-          <div className="bg-white rounded-xl shadow-md p-12 text-center border border-gray-200">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-[#ffe5e5] to-[#fcf3f3] rounded-full flex items-center justify-center">
-              <svg className="w-12 h-12 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-[#3e2d2e] mb-2">No certifications yet</h3>
-            <p className="text-[#6d6d6d] mb-6">Add your professional certifications to build trust with pet owners</p>
+        {/* Main Content */}
+        <main>
+          {/* Add Certificate Section */}
+          <section className="mb-[27px]">
+            <h2 className="text-[18px] font-semibold leading-[1.2] text-[#3e2d2e] mb-[13px] m-0">
+              Add Certificate
+            </h2>
             <button
               onClick={handleAddNew}
-              className="px-6 py-3 bg-[#fb7678] text-white rounded-lg font-medium hover:bg-[#fa6568] transition-colors inline-flex items-center gap-2"
+              className="w-full h-[115px] bg-white rounded-[10px] shadow-[0px_2px_4px_-2px_rgba(0,0,0,0.1),0px_4px_6px_-1px_rgba(0,0,0,0.1)] flex items-center justify-center cursor-pointer hover:-translate-y-0.5 transition-transform duration-200"
+              aria-label="Add new certificate"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add Your First Certification
-            </button>
-          </div>
-        )}
-
-        {/* Certifications Grid */}
-        {!loading && certifications.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {certifications.map((cert) => (
-              <div
-                key={cert.id}
-                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-200"
-              >
-                {/* Card Header with Gradient */}
-                <div className="relative bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] p-6">
-                  <div className="absolute top-0 right-0 left-0 h-full bg-gradient-to-b from-transparent to-black/10"></div>
-                  <div className="relative">
-                    <h3 className="text-xl font-bold text-white line-clamp-2 mb-2">
-                      {cert.certification_name}
-                    </h3>
-                    {cert.issuing_organization && (
-                      <div className="flex items-center gap-1.5 text-white/90">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                        <span className="text-sm font-medium">{cert.issuing_organization}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Card Body */}
-                <div className="p-6">
-                  {/* Certification Type Badge */}
-                  <div className="mb-4">
-                    <span className="px-3 py-1.5 bg-[#ffe5e5] text-[#fb7678] text-xs rounded-lg font-medium border border-[#ffa8aa] capitalize">
-                      {cert.certification_type.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-
-                  {/* Certification Details */}
-                  <div className="space-y-3 mb-5">
-                    {cert.certificate_number && (
-                      <div className="flex items-start gap-2">
-                        <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                        </svg>
-                        <div>
-                          <p className="text-xs text-[#ababab] font-medium">Certificate Number</p>
-                          <p className="text-sm text-[#3e2d2e]">{cert.certificate_number}</p>
-                        </div>
-                      </div>
-                    )}
-                    {cert.issued_date && (
-                      <div className="flex items-start gap-2">
-                        <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <div>
-                          <p className="text-xs text-[#ababab] font-medium">Issued Date</p>
-                          <p className="text-sm text-[#3e2d2e]">{new Date(cert.issued_date).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                    )}
-                    {cert.expiry_date && (
-                      <div className="flex items-start gap-2">
-                        <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div>
-                          <p className="text-xs text-[#ababab] font-medium">Expiry Date</p>
-                          <p className="text-sm text-[#3e2d2e]">{new Date(cert.expiry_date).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                    )}
-                    {cert.document_url && (
-                      <a
-                        href={cert.document_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-[#fb7678] hover:text-[#fa6568] font-medium"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                          />
-                        </svg>
-                        View Certificate Document
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => handleEdit(cert)}
-                      className="px-4 py-2.5 bg-[#fb7678] text-white text-sm rounded-lg hover:bg-[#fa6568] transition-colors font-medium flex items-center justify-center gap-1.5"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(cert.id)}
-                      className="px-4 py-2.5 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100 transition-colors font-medium flex items-center justify-center gap-1.5"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      Delete
-                    </button>
-                  </div>
-                </div>
+              {/* <div className="w-[52px] h-[52px] bg-[#fb8284] rounded-full flex items-center justify-center text-white text-[28px] font-light">
+                +
+              </div> */}
+              <div className="flex items-center justify-center">
+                <img src="/icons/common/add-pink-icon.svg" alt="Add Certificates" className="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full" />
               </div>
-            ))}
-          </div>
-        )}
+            </button>
+          </section>
 
-        {/* Add/Edit Certification Modal */}
-        {showAddModal && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-gradient-to-br from-gray-900/70 via-[#fb7678]/30 to-[#ffa8aa]/30 backdrop-blur-sm transition-opacity"
-              onClick={() => {
-                setShowAddModal(false);
-                setEditingCert(null);
-              }}
-            />
+          {/* Loading State */}
+          {loading && (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb7678]"></div>
+            </div>
+          )}
 
-            {/* Modal */}
-            <div className="flex min-h-full items-center justify-center p-4">
-              <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
-                {/* Close Button */}
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditingCert(null);
-                  }}
-                  className="absolute top-6 right-6 z-10 p-2.5 bg-white rounded-full shadow-lg hover:bg-red-50 hover:text-red-600 transition-all duration-200 group border border-gray-200"
-                >
-                  <svg className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+          {/* Your Certifications Section */}
+          {!loading && (
+            <section>
+              <h2 className="text-[18px] font-semibold leading-[1.2] text-[#3e2d2e] mb-[12px] m-0">
+                Your Certifications
+              </h2>
 
-                {/* Header with Gradient */}
-                <div className="bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] px-8 py-6">
-                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    {editingCert ? 'Edit Certification' : 'Add New Certification'}
-                  </h2>
-                  <p className="text-white/90 mt-2 text-sm">Add your professional credentials to showcase your expertise</p>
+              {/* Empty State */}
+              {certifications.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-[#7d7d7d] text-sm">No certifications yet</p>
+                  <p className="text-[#7d7d7d] text-xs mt-2">Click "Add Certificate" to get started</p>
                 </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-[10px]">
+                  {certifications.map((cert) => (
+                    <article key={cert.id} className="flex flex-col group">
+                      {/* Certificate Image */}
+                      {cert.document_url ? (
+                        <img
+                          src={cert.document_url}
+                          alt={cert.certification_name}
+                          className="w-full h-[139px] rounded-[10px] object-cover shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)]"
+                        />
+                      ) : (
+                        <div className="w-full h-[139px] rounded-[10px] bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)] flex items-center justify-center">
+                          <svg className="w-12 h-12 text-white opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                      )}
 
-                <div className="p-8 overflow-y-auto max-h-[calc(90vh-120px)]">
+                      {/* Certificate Info */}
+                      <div className="pt-[6px] flex flex-col gap-[3px]">
+                        <h3 className="text-[16px] font-semibold leading-[1.2] text-[#3e2d2e] m-0 line-clamp-1">
+                          {cert.certification_name}
+                        </h3>
+                        {cert.issued_date && (
+                          <p className="text-[12px] font-semibold leading-[1.2] text-[#7d7d7d] m-0">
+                            Issued: {formatDate(cert.issued_date)}
+                          </p>
+                        )}
+                        {cert.expiry_date && (
+                          <p className="text-[12px] font-semibold leading-[1.2] text-[#7d7d7d] m-0">
+                            Valid till: {formatDate(cert.expiry_date)}
+                          </p>
+                        )}
 
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Certification Type */}
+                        {/* Action Buttons - Show on hover/tap */}
+                        <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleEdit(cert)}
+                            className="flex-1 px-2 py-1 bg-[#fb7678] text-white text-[10px] rounded hover:bg-[#fa6568] transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(cert.id)}
+                            className="flex-1 px-2 py-1 bg-red-500 text-white text-[10px] rounded hover:bg-red-600 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+        </main>
+
+        {/* Responsive behavior for extra small screens */}
+        <style jsx>{`
+          @media (max-width: 380px) {
+            .grid-cols-2 {
+              grid-template-columns: 1fr;
+              justify-items: center;
+            }
+            article {
+              max-width: 250px;
+            }
+          }
+        `}</style>
+      </div>
+
+      {/* Add/Edit Certification Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => {
+              setShowAddModal(false);
+              setEditingCert(null);
+              resetForm();
+            }}
+          />
+
+          {/* Modal */}
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden">
+              {/* Close Button */}
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setEditingCert(null);
+                  resetForm();
+                }}
+                className="absolute top-4 right-4 z-10 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              {/* Header */}
+              <div className="bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] px-6 py-4">
+                <h2 className="text-xl font-bold text-white">
+                  {editingCert ? 'Edit Certification' : 'Add New Certification'}
+                </h2>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Certificate Image Upload */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Certificate Image
+                    </label>
+                    {certificateImagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={certificateImagePreview}
+                          alt="Certificate preview"
+                          className="w-full h-40 object-cover rounded-lg border-2 border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#fb7678] hover:bg-[#ffe5e5]/50 transition-all flex flex-col items-center justify-center gap-2 group"
+                        >
+                          <div className="w-12 h-12 bg-[#ffe5e5] rounded-full flex items-center justify-center group-hover:bg-[#ffa8aa]/30 transition-colors">
+                            <svg className="w-6 h-6 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-semibold text-gray-700 group-hover:text-[#fb7678] transition-colors">
+                              Click to upload image
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">PNG, JPG, or WEBP (max 5MB)</p>
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Certification Type */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Certification Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="certification_type"
+                      value={formData.certification_type}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors text-sm"
+                    >
+                      <option value="">Select a type</option>
+                      {certificationTypes.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Certification Name */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Certification Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="certification_name"
+                      value={formData.certification_name}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="e.g., Pet Grooming Certificate"
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors text-sm"
+                    />
+                  </div>
+
+                  {/* Issuing Organization */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Issuing Organization
+                    </label>
+                    <input
+                      type="text"
+                      name="issuing_organization"
+                      value={formData.issuing_organization}
+                      onChange={handleInputChange}
+                      placeholder="e.g., American Red Cross"
+                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors text-sm"
+                    />
+                  </div>
+
+                  {/* Date Fields */}
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Certification Type <span className="text-red-500">*</span>
+                        Issued Date <span className="text-red-500">*</span>
                       </label>
-                      <select
-                        name="certification_type"
-                        value={formData.certification_type}
+                      <input
+                        type="date"
+                        name="issued_date"
+                        value={formData.issued_date}
                         onChange={handleInputChange}
                         required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
-                      >
-                        <option value="">Select a type</option>
-                        {certificationTypes.map((type) => (
-                          <option key={type.value} value={type.value}>
-                            {type.label}
-                          </option>
-                        ))}
-                      </select>
+                        max={new Date().toISOString().split('T')[0]}
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors text-sm"
+                      />
                     </div>
-
-                    {/* Certification Name */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Certification Name <span className="text-red-500">*</span>
+                        Valid Till <span className="text-red-500">*</span>
                       </label>
                       <input
-                        type="text"
-                        name="certification_name"
-                        value={formData.certification_name}
+                        type="date"
+                        name="expiry_date"
+                        value={formData.expiry_date}
                         onChange={handleInputChange}
                         required
-                        placeholder="e.g., Certified Pet First Aid & CPR"
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
+                        min={formData.issued_date || new Date().toISOString().split('T')[0]}
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors text-sm"
                       />
                     </div>
+                  </div>
 
-                    {/* Issuing Organization */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Issuing Organization
-                      </label>
-                      <input
-                        type="text"
-                        name="issuing_organization"
-                        value={formData.issuing_organization}
-                        onChange={handleInputChange}
-                        placeholder="e.g., American Red Cross"
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
-                      />
-                    </div>
+                  {/* Helper text for dates */}
+                  <p className="text-xs text-gray-500 -mt-2">
+                    Both issued date and expiry date are required for verification
+                  </p>
 
-                    {/* Certificate Number */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Certificate Number
-                      </label>
-                      <input
-                        type="text"
-                        name="certificate_number"
-                        value={formData.certificate_number}
-                        onChange={handleInputChange}
-                        placeholder="Optional certificate/license number"
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
-                      />
-                    </div>
-
-                    {/* Document URL */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Document URL
-                      </label>
-                      <input
-                        type="url"
-                        name="document_url"
-                        value={formData.document_url}
-                        onChange={handleInputChange}
-                        placeholder="https://example.com/certificate.pdf"
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
-                      />
-                      <p className="mt-2 text-xs text-[#ababab]">
-                        Link to your certification document (PDF, image, etc.)
-                      </p>
-                    </div>
-
-                    {/* Date Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Issued Date
-                        </label>
-                        <input
-                          type="date"
-                          name="issued_date"
-                          value={formData.issued_date}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Expiry Date
-                        </label>
-                        <input
-                          type="date"
-                          name="expiry_date"
-                          value={formData.expiry_date}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-4 pt-6 border-t-2 border-gray-100">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowAddModal(false);
-                          setEditingCert(null);
-                        }}
-                        className="px-8 py-3.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 flex items-center gap-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 px-8 py-3.5 bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] text-white rounded-xl font-semibold hover:from-[#fa6568] hover:to-[#fe8c85] transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {editingCert ? 'Update Certification' : 'Add Certification'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddModal(false);
+                        setEditingCert(null);
+                        resetForm();
+                      }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={uploadingImage}
+                      className="flex-1 px-4 py-2 bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] text-white rounded-lg font-medium hover:from-[#fa6568] hover:to-[#fe8c85] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+                    >
+                      {uploadingImage ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Uploading...
+                        </>
+                      ) : (
+                        <>{editingCert ? 'Update' : 'Add'} Certification</>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

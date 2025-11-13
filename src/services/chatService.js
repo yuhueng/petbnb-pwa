@@ -157,14 +157,7 @@ class ChatService {
           .limit(1)
           .maybeSingle();
 
-        // Count unread messages (where current user is NOT the sender and is_read = false)
-        const { count: unreadCount } = await supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', conv.id)
-          .neq('sender_id', userId)
-          .eq('is_read', false);
-
+        // No unread count tracking
         return {
           id: conv.id,
           otherParticipant: {
@@ -172,7 +165,7 @@ class ChatService {
             role: otherParticipantRole, // Add the role based on conversation structure
           },
           lastMessage: lastMessageData || null,
-          unreadCount: unreadCount || 0,
+          unreadCount: 0, // Always 0 - no tracking
           updated_at: conv.updated_at,
           created_at: conv.created_at,
         };
@@ -249,18 +242,11 @@ class ChatService {
   }
 
   /**
-   * Mark all unread messages in a conversation as read
+   * Mark all unread messages in a conversation as read (No-op for now)
    */
   async markAsRead(conversationId, currentUserId) {
-    const { error } = await supabase
-      .from('messages')
-      .update({ is_read: true })
-      .eq('conversation_id', conversationId)
-      .neq('sender_id', currentUserId)
-      .eq('is_read', false);
-
-    if (error) throw new Error(error.message);
-    console.log('✅ Messages marked as read in conversation:', conversationId);
+    // Disabled - no read tracking
+    console.log('✅ markAsRead called (disabled):', conversationId);
   }
 
   /**

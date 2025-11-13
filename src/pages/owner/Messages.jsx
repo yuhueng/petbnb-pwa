@@ -95,6 +95,7 @@ const OwnerMessages = () => {
     };
   }, [selectedConversation?.id, user?.id]);
 
+
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
@@ -130,11 +131,7 @@ const OwnerMessages = () => {
   };
 
   const markMessagesAsRead = async (conversationId) => {
-    try {
-      await chatService.markAsRead(conversationId, user.id);
-    } catch (error) {
-      console.error('Error marking messages as read:', error);
-    }
+    // Disabled - no read tracking
   };
 
   const handleSelectConversation = (conversation) => {

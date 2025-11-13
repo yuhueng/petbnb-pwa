@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
+import { usePetStore } from '@/store/petStore';
 import { chatService } from '@/services/chatService';
 import { bookingService } from '@/services/bookingService';
 import toast from 'react-hot-toast';
@@ -49,14 +50,24 @@ import toast from 'react-hot-toast';
 const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { pets, fetchPets, isLoading: petsLoading } = usePetStore();
   const [isStartingConversation, setIsStartingConversation] = useState(false);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [showNoPetsModal, setShowNoPetsModal] = useState(false);
   const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const [bookingForm, setBookingForm] = useState({
     startDate: '',
     endDate: '',
     specialRequests: '',
+    selectedPetIds: [],
   });
+
+  // Fetch pets when modal opens and user is authenticated
+  useEffect(() => {
+    if (isOpen && user?.id) {
+      fetchPets(user.id);
+    }
+  }, [isOpen, user?.id, fetchPets]);
 
   if (!isOpen || !listing) return null;
 
@@ -85,6 +96,50 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
   const sitterAvatar = profiles?.avatar_url;
   const sitterBio = profiles?.bio;
   const sitterLocation = profiles?.location || (city && state ? `${city}, ${state}` : 'Location not specified');
+
+  // Handle open booking form - check for pets first
+  const handleOpenBookingForm = () => {
+    if (!user) {
+      toast.error('Please log in to book');
+      navigate('/login');
+      return;
+    }
+
+    // Check if user has pets
+    if (!pets || pets.length === 0) {
+      setShowNoPetsModal(true);
+      return;
+    }
+
+    setShowBookingForm(true);
+  };
+
+  // Handle pet selection toggle
+  const handlePetToggle = (petId) => {
+    setBookingForm((prev) => {
+      const isSelected = prev.selectedPetIds.includes(petId);
+
+      if (isSelected) {
+        // Deselect pet
+        return {
+          ...prev,
+          selectedPetIds: prev.selectedPetIds.filter((id) => id !== petId),
+        };
+      } else {
+        // Check max_pets limit
+        if (max_pets && prev.selectedPetIds.length >= max_pets) {
+          toast.error(`This sitter accepts a maximum of ${max_pets} pet${max_pets > 1 ? 's' : ''}`);
+          return prev;
+        }
+
+        // Select pet
+        return {
+          ...prev,
+          selectedPetIds: [...prev.selectedPetIds, petId],
+        };
+      }
+    });
+  };
 
   // Handle start conversation
   const handleStartConversation = async () => {
@@ -124,6 +179,12 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
       return;
     }
 
+    // Validate pet selection
+    if (!bookingForm.selectedPetIds || bookingForm.selectedPetIds.length === 0) {
+      toast.error('Please select at least one pet');
+      return;
+    }
+
     // Validate dates
     if (!bookingForm.startDate || !bookingForm.endDate) {
       toast.error('Please select start and end dates');
@@ -155,6 +216,11 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
 
     setIsCreatingBooking(true);
     try {
+      // Get selected pets with full details
+      const selectedPets = pets.filter((pet) =>
+        bookingForm.selectedPetIds.includes(pet.id)
+      );
+
       // Create booking
       const booking = await bookingService.createBooking({
         listingId: listing.id,
@@ -164,7 +230,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
         endDate: bookingForm.endDate,
         totalPrice,
         specialRequests: bookingForm.specialRequests || null,
-        petIds: [], // TODO: Allow selecting pets
+        petIds: bookingForm.selectedPetIds,
       });
 
       console.log('✅ Booking created:', booking.id);
@@ -175,8 +241,28 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
       const conversation = await chatService.getOrCreateConversationExplicit(user.id, profiles.id);
       console.log('✅ Conversation ready:', conversation.id);
 
-      // Send booking request message
-      const requestMessage = `📋 New booking request!\n\n📅 Dates: ${start.toLocaleDateString()} - ${end.toLocaleDateString()}\n🏠 Service: ${title}\n${totalPrice ? `💰 Total: $${(totalPrice / 100).toFixed(2)}` : ''}\n${bookingForm.specialRequests ? `📝 Special requests: ${bookingForm.specialRequests}` : ''}\n\nPlease review and respond.`;
+      // Build pet details message
+      const petDetailsMessage = selectedPets
+        .map((pet) => {
+          let petInfo = `🐾 ${pet.name} (${pet.species.charAt(0).toUpperCase() + pet.species.slice(1)})`;
+          if (pet.breed) petInfo += `\n   Breed: ${pet.breed}`;
+          if (pet.age) petInfo += `\n   Age: ${pet.age} years`;
+          if (pet.weight) petInfo += `\n   Weight: ${pet.weight} lbs`;
+          if (pet.gender && pet.gender !== 'unknown')
+            petInfo += `\n   Gender: ${pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1)}`;
+          if (pet.temperament) petInfo += `\n   Temperament: ${pet.temperament}`;
+          if (pet.medical_conditions) petInfo += `\n   ⚕️ Medical: ${pet.medical_conditions}`;
+          if (pet.allergies) petInfo += `\n   🚫 Allergies: ${pet.allergies}`;
+          if (pet.medications) petInfo += `\n   💊 Medications: ${pet.medications}`;
+          if (pet.special_needs) petInfo += `\n   ⚠️ Special needs: ${pet.special_needs}`;
+          if (pet.feeding_instructions) petInfo += `\n   🍽️ Feeding: ${pet.feeding_instructions}`;
+          if (pet.vet_name) petInfo += `\n   🏥 Vet: ${pet.vet_name}${pet.vet_phone ? ` (${pet.vet_phone})` : ''}`;
+          return petInfo;
+        })
+        .join('\n\n');
+
+      // Send booking request message with pet details
+      const requestMessage = `📋 New booking request!\n\n📅 Dates: ${start.toLocaleDateString()} - ${end.toLocaleDateString()}\n🏠 Service: ${title}\n${totalPrice ? `💰 Total: $${(totalPrice / 100).toFixed(2)}` : ''}\n\n${petDetailsMessage}\n${bookingForm.specialRequests ? `\n📝 Special requests: ${bookingForm.specialRequests}` : ''}\n\nPlease review and respond.`;
 
       const message = await chatService.sendMessage({
         conversationId: conversation.id,
@@ -193,7 +279,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
 
       // Close modal and reset form
       setShowBookingForm(false);
-      setBookingForm({ startDate: '', endDate: '', specialRequests: '' });
+      setBookingForm({ startDate: '', endDate: '', specialRequests: '', selectedPetIds: [] });
       onClose();
 
       // Navigate to messages
@@ -541,6 +627,48 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
                       />
                     </div>
 
+                    {/* Pet Selection */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Select Pets {max_pets && `(Max: ${max_pets})`}
+                      </label>
+                      <div className="space-y-2 max-h-48 overflow-y-auto p-2 border border-indigo-200 rounded-lg bg-gray-50">
+                        {petsLoading ? (
+                          <p className="text-sm text-gray-500 text-center py-4">Loading pets...</p>
+                        ) : pets && pets.length > 0 ? (
+                          pets.map((pet) => (
+                            <label
+                              key={pet.id}
+                              className="flex items-center p-3 bg-white rounded-lg hover:bg-indigo-50 cursor-pointer transition-colors border border-gray-200"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={bookingForm.selectedPetIds.includes(pet.id)}
+                                onChange={() => handlePetToggle(pet.id)}
+                                className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                              />
+                              <div className="ml-3 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-gray-900">{pet.name}</span>
+                                  <span className="text-sm text-gray-500 capitalize">({pet.species})</span>
+                                </div>
+                                {pet.breed && (
+                                  <p className="text-xs text-gray-600 mt-0.5">{pet.breed}</p>
+                                )}
+                              </div>
+                            </label>
+                          ))
+                        ) : (
+                          <p className="text-sm text-gray-500 text-center py-4">No pets found</p>
+                        )}
+                      </div>
+                      {bookingForm.selectedPetIds.length > 0 && (
+                        <p className="text-xs text-indigo-600 mt-2">
+                          {bookingForm.selectedPetIds.length} pet{bookingForm.selectedPetIds.length > 1 ? 's' : ''} selected
+                        </p>
+                      )}
+                    </div>
+
                     {/* Special Requests */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -597,7 +725,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
                       <button
                         onClick={() => {
                           setShowBookingForm(false);
-                          setBookingForm({ startDate: '', endDate: '', specialRequests: '' });
+                          setBookingForm({ startDate: '', endDate: '', specialRequests: '', selectedPetIds: [] });
                         }}
                         disabled={isCreatingBooking}
                         className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors disabled:opacity-50"
@@ -612,7 +740,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t-2 border-gray-200">
                 <button
-                  onClick={() => setShowBookingForm(!showBookingForm)}
+                  onClick={handleOpenBookingForm}
                   disabled={showBookingForm}
                   className="w-full sm:flex-1 px-6 py-4 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
                 >
@@ -654,6 +782,52 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
           </div>
         </div>
       </div>
+
+      {/* No Pets Modal */}
+      {showNoPetsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
+            onClick={() => setShowNoPetsModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="text-center">
+              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No Pets Added</h3>
+              <p className="text-gray-600 mb-6">
+                You need to add at least one pet before making a booking. Please add your pet's information first.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowNoPetsModal(false);
+                    onClose();
+                    navigate('/owner/profile');
+                  }}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+                >
+                  Add Pet
+                </button>
+                <button
+                  onClick={() => setShowNoPetsModal(false)}
+                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

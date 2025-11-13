@@ -189,11 +189,9 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
                     <div className="flex items-center gap-1.5">
                       {preview.icon && <span className="flex-shrink-0">{preview.icon}</span>}
                       <p className={`text-sm truncate ${
-                        unreadCount > 0
-                          ? 'text-gray-900 font-semibold'
-                          : lastMessage
-                            ? 'text-gray-600'
-                            : 'text-gray-400 italic'
+                        lastMessage
+                          ? 'text-gray-600'
+                          : 'text-gray-400 italic'
                       }`}>
                         {preview.text}
                       </p>
@@ -201,15 +199,6 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
                   );
                 })()}
               </div>
-
-              {/* Unread badge */}
-              {unreadCount > 0 && (
-                <div className="flex-shrink-0">
-                  <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-white bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] rounded-full shadow-md">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         );

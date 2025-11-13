@@ -110,6 +110,101 @@ export const certificationService = {
       throw error;
     }
   },
+
+  /**
+   * Upload a certificate image to Supabase Storage
+   * @param {File} file - Image file to upload
+   * @param {string} sitterId - Sitter's user ID
+   * @returns {Promise<{success: boolean, url?: string, error?: string}>}
+   */
+  async uploadCertificateImage(file, sitterId) {
+    try {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        return {
+          success: false,
+          error: 'Invalid file type. Only JPG, PNG, and WEBP are allowed.',
+        };
+      }
+
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        return {
+          success: false,
+          error: 'File size too large. Maximum size is 5MB.',
+        };
+      }
+
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${sitterId}/cert-${Date.now()}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('certification-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('certification-images')
+        .getPublicUrl(fileName);
+
+      return {
+        success: true,
+        url: publicUrlData.publicUrl,
+      };
+    } catch (error) {
+      console.error('Error uploading certificate image:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+
+  /**
+   * Delete a certificate image from storage
+   * @param {string} imageUrl - Full URL of the image to delete
+   * @returns {Promise<{success: boolean}>}
+   */
+  async deleteCertificateImage(imageUrl) {
+    try {
+      if (!imageUrl) return { success: true };
+
+      // Extract file path from URL
+      const urlParts = imageUrl.split('/certification-images/');
+      if (urlParts.length < 2) {
+        throw new Error('Invalid image URL');
+      }
+      const filePath = urlParts[1];
+
+      // Delete from storage
+      const { error } = await supabase.storage
+        .from('certification-images')
+        .remove([filePath]);
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting certificate image:', error);
+      // Don't fail the whole operation if delete fails
+      return { success: true };
+    }
+  },
 };
 
 export default certificationService;

@@ -516,7 +516,7 @@ CREATE POLICY "Users can send messages in their conversations"
   );
 
 CREATE POLICY "Users can update their own messages"
-  ON messages FOR UPDATE 
+  ON messages FOR UPDATE
   USING (auth.uid() = sender_id);
 
 -- REVIEWS: Public read, reviewers create/update own
@@ -844,3 +844,36 @@ COMMENT ON COLUMN pet_activities.activity_detail IS 'JSONB object containing typ
 COMMENT ON COLUMN pet_activities.image_urls IS 'Array of image URLs uploaded during activity logging (stored in pet-activity-images bucket)';
 COMMENT ON COLUMN pet_activities.activity_timestamp IS 'When the activity was performed (can be different from created_at if backfilled)';
 COMMENT ON COLUMN pet_activities.created_at IS 'When the record was created in the database';
+
+-- ============================================
+-- STORAGE: Certification Images Bucket
+-- ============================================
+
+-- Create certification images bucket (public access for images)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('certification-images', 'certification-images', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow authenticated users to upload certification images
+CREATE POLICY "Allow authenticated users to upload certification images"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'certification-images');
+
+-- Allow public read access to certification images
+CREATE POLICY "Allow public read of certification images"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'certification-images');
+
+-- Allow users to update their own certification images
+CREATE POLICY "Allow users to update own certification images"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (bucket_id = 'certification-images' AND owner = auth.uid());
+
+-- Allow users to delete their own certification images
+CREATE POLICY "Allow users to delete own certification images"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'certification-images' AND owner = auth.uid());

@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useListingStore } from '@/store/listingStore';
+import ImageGallery from '@/components/common/ImageGallery';
+import RatingDisplay from '@/components/common/RatingDisplay';
+import ReviewsModal from '@/components/common/ReviewsModal';
+import reviewService from '@/services/reviewService';
 
 const Listing = () => {
   const navigate = useNavigate();
@@ -20,10 +24,12 @@ const Listing = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingListingId, setEditingListingId] = useState(null); // Track which listing is being edited
   const [pricingType, setPricingType] = useState('per_day'); // 'per_day' or 'per_hour'
-  const [coverImage, setCoverImage] = useState(null); // Cover image file
-  const [coverImagePreview, setCoverImagePreview] = useState(null); // Preview URL
+  const [selectedImages, setSelectedImages] = useState([]); // Array of {file, preview, isExisting} objects
   const [isUploadingImage, setIsUploadingImage] = useState(false); // Upload state
   const fileInputRef = useState(null); // Reference to file input
+  const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
+  const [selectedListingForReviews, setSelectedListingForReviews] = useState(null);
+  const [listingRatings, setListingRatings] = useState({}); // Store ratings for each listing
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -84,6 +90,40 @@ const Listing = () => {
     }
   }, [isAuthenticated, user, fetchMyListings]);
 
+  // Fetch ratings for all listings
+  useEffect(() => {
+    const fetchRatings = async () => {
+      if (myListings.length > 0 && user) {
+        const ratings = {};
+        for (const listing of myListings) {
+          try {
+            const stats = await reviewService.getRatingStats(user.id);
+            ratings[listing.id] = {
+              averageRating: stats.averageRating,
+              totalReviews: stats.totalReviews,
+            };
+          } catch (error) {
+            console.error('Error fetching ratings for listing:', listing.id, error);
+            ratings[listing.id] = { averageRating: 0, totalReviews: 0 };
+          }
+        }
+        setListingRatings(ratings);
+      }
+    };
+
+    fetchRatings();
+  }, [myListings, user]);
+
+  const handleOpenReviewsModal = (listing) => {
+    setSelectedListingForReviews(listing);
+    setReviewsModalOpen(true);
+  };
+
+  const handleCloseReviewsModal = () => {
+    setReviewsModalOpen(false);
+    setSelectedListingForReviews(null);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -106,38 +146,60 @@ const Listing = () => {
   };
 
   const handleImageSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Validate file type
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      alert('Please select a valid image file (PNG, JPG, GIF, or WEBP)');
-      return;
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    const newImages = [];
+
+    for (const file of files) {
+      // Validate file type
+      if (!validTypes.includes(file.type)) {
+        alert(`Invalid file type for ${file.name}. Only PNG, JPG, and WEBP are allowed.`);
+        continue;
+      }
+
+      // Validate file size
+      if (file.size > maxSize) {
+        alert(`File ${file.name} is too large. Maximum size is 5MB.`);
+        continue;
+      }
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      newImages.push({
+        file,
+        preview: previewUrl,
+        isExisting: false,
+      });
     }
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5 MB');
-      return;
-    }
-
-    setCoverImage(file);
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setCoverImagePreview(previewUrl);
+    setSelectedImages((prev) => [...prev, ...newImages]);
   };
 
-  const handleRemoveImage = () => {
-    if (coverImagePreview) {
-      URL.revokeObjectURL(coverImagePreview);
-    }
-    setCoverImage(null);
-    setCoverImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+  const handleRemoveImage = (index) => {
+    setSelectedImages((prev) => {
+      const newImages = [...prev];
+      const removed = newImages.splice(index, 1)[0];
+
+      // Revoke object URL if it's a new upload (not existing)
+      if (!removed.isExisting && removed.preview) {
+        URL.revokeObjectURL(removed.preview);
+      }
+
+      return newImages;
+    });
+  };
+
+  const handleMoveImage = (fromIndex, toIndex) => {
+    setSelectedImages((prev) => {
+      const newImages = [...prev];
+      const [movedImage] = newImages.splice(fromIndex, 1);
+      newImages.splice(toIndex, 0, movedImage);
+      return newImages;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -182,34 +244,42 @@ const Listing = () => {
       return;
     }
 
-    // Upload cover image if selected
-    let coverImageUrl = null;
-    if (coverImage) {
+    // Upload images
+    const uploadedImageUrls = [];
+    const existingImageUrls = [];
+
+    // Separate new uploads from existing images
+    const newImages = selectedImages.filter((img) => !img.isExisting);
+    const existingImages = selectedImages.filter((img) => img.isExisting);
+
+    // Keep existing image URLs
+    existingImageUrls.push(...existingImages.map((img) => img.preview));
+
+    // Upload new images
+    if (newImages.length > 0) {
       setIsUploadingImage(true);
       try {
-        const { listingImageService } = await import('@/services/listingImageService');
-
-        // For new listings, create a temporary ID; for edits, use existing ID
+        const { listingService } = await import('@/services/listingService');
         const tempListingId = editingListingId || `temp-${Date.now()}`;
 
-        const uploadResult = await listingImageService.uploadCoverImage(coverImage, tempListingId);
+        const filesToUpload = newImages.map((img) => img.file);
+        const uploadedUrls = await listingService.uploadListingImages(filesToUpload, tempListingId);
 
-        if (!uploadResult.success) {
-          alert(`Failed to upload image: ${uploadResult.error}`);
-          setIsUploadingImage(false);
-          return;
-        }
-
-        coverImageUrl = uploadResult.url;
+        uploadedImageUrls.push(...uploadedUrls);
       } catch (error) {
         console.error('Image upload error:', error);
-        alert('Failed to upload image. Please try again.');
+        alert('Failed to upload images. Please try again.');
         setIsUploadingImage(false);
         return;
       } finally {
         setIsUploadingImage(false);
       }
     }
+
+    // Combine all image URLs (existing + newly uploaded)
+    const allImageUrls = [...existingImageUrls, ...uploadedImageUrls];
+    const coverImageUrl = allImageUrls.length > 0 ? allImageUrls[0] : null;
+    const galleryImages = allImageUrls.length > 1 ? allImageUrls.slice(1) : [];
 
     // Prepare data
     const listingData = {
@@ -225,8 +295,9 @@ const Listing = () => {
       // Set dates or null
       available_from: formData.available_from || null,
       available_to: formData.available_to || null,
-      // Add cover image URL if uploaded
-      cover_image_url: coverImageUrl || formData.cover_image_url || null,
+      // Add image URLs
+      cover_image_url: coverImageUrl,
+      image_urls: galleryImages,
     };
 
     let result;
@@ -256,10 +327,25 @@ const Listing = () => {
       setPricingType('per_hour');
     }
 
-    // Load existing image if available
+    // Load existing images
+    const existingImages = [];
     if (listing.cover_image_url) {
-      setCoverImagePreview(listing.cover_image_url);
+      existingImages.push({
+        file: null,
+        preview: listing.cover_image_url,
+        isExisting: true,
+      });
     }
+    if (listing.image_urls && listing.image_urls.length > 0) {
+      listing.image_urls.forEach((url) => {
+        existingImages.push({
+          file: null,
+          preview: url,
+          isExisting: true,
+        });
+      });
+    }
+    setSelectedImages(existingImages);
 
     setFormData({
       title: listing.title || '',
@@ -279,7 +365,6 @@ const Listing = () => {
       cancellation_policy: listing.cancellation_policy || '',
       available_from: listing.available_from || '',
       available_to: listing.available_to || '',
-      cover_image_url: listing.cover_image_url || '',
     });
   };
 
@@ -312,13 +397,14 @@ const Listing = () => {
     setEditingListingId(null); // Clear the editing ID
     setPricingType('per_day'); // Reset to default pricing type
 
-    // Clear image state
-    if (coverImagePreview && !formData.cover_image_url) {
-      // Only revoke if it's a local blob URL, not an existing image URL
-      URL.revokeObjectURL(coverImagePreview);
-    }
-    setCoverImage(null);
-    setCoverImagePreview(null);
+    // Clear image state - revoke object URLs for new uploads only
+    selectedImages.forEach((img) => {
+      if (!img.isExisting && img.preview) {
+        URL.revokeObjectURL(img.preview);
+      }
+    });
+    setSelectedImages([]);
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -474,61 +560,98 @@ const Listing = () => {
               <p className="mt-2 text-xs text-gray-500">Make it engaging and informative for potential clients</p>
             </div>
 
-            {/* Cover Image Upload */}
+            {/* Multiple Image Upload */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Cover Image
-                <span className="text-gray-500 font-normal ml-2">(Recommended)</span>
+                Listing Images
+                <span className="text-gray-500 font-normal ml-2">(First image will be cover)</span>
               </label>
 
-              {/* Image Preview or Upload Button */}
-              {coverImagePreview ? (
-                <div className="relative">
-                  <img
-                    src={coverImagePreview}
-                    alt="Cover preview"
-                    className="w-full h-64 object-cover rounded-xl border-2 border-gray-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-64 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#fb7678] hover:bg-[#ffe5e5]/50 transition-all flex flex-col items-center justify-center gap-3 group"
-                  >
-                    <div className="w-16 h-16 bg-[#ffe5e5] rounded-full flex items-center justify-center group-hover:bg-[#ffa8aa]/30 transition-colors">
-                      <svg className="w-8 h-8 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+              {/* Image Thumbnails */}
+              {selectedImages.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                  {selectedImages.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={image.preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full aspect-square object-cover rounded-lg border-2 border-gray-200"
+                      />
+
+                      {/* First image badge */}
+                      {index === 0 && (
+                        <div className="absolute top-2 left-2 bg-[#fb7678] text-white text-xs px-2 py-1 rounded-full font-semibold">
+                          Cover
+                        </div>
+                      )}
+
+                      {/* Delete button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg opacity-0 group-hover:opacity-100"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+
+                      {/* Move left/right buttons */}
+                      <div className="absolute bottom-2 left-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleMoveImage(index, index - 1)}
+                            className="flex-1 px-2 py-1 bg-white/90 hover:bg-white text-gray-700 text-xs rounded font-medium shadow-sm"
+                          >
+                            ←
+                          </button>
+                        )}
+                        {index < selectedImages.length - 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleMoveImage(index, index + 1)}
+                            className="flex-1 px-2 py-1 bg-white/90 hover:bg-white text-gray-700 text-xs rounded font-medium shadow-sm"
+                          >
+                            →
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className="text-sm font-semibold text-gray-700 group-hover:text-[#fb7678] transition-colors">
-                        Click to upload cover image
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF or WEBP (max 5MB)</p>
-                    </div>
-                  </button>
+                  ))}
                 </div>
               )}
+
+              {/* Upload Button */}
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-32 border-2 border-dashed border-gray-300 rounded-xl hover:border-[#fb7678] hover:bg-[#ffe5e5]/50 transition-all flex flex-col items-center justify-center gap-2 group"
+                >
+                  <div className="w-12 h-12 bg-[#ffe5e5] rounded-full flex items-center justify-center group-hover:bg-[#ffa8aa]/30 transition-colors">
+                    <svg className="w-6 h-6 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-gray-700 group-hover:text-[#fb7678] transition-colors">
+                      {selectedImages.length > 0 ? 'Add more images' : 'Click to upload images'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG, or WEBP (max 5MB each)</p>
+                  </div>
+                </button>
+              </div>
               <p className="mt-2 text-xs text-gray-500">
-                A great cover image helps attract more bookings. Show your space or happy pets you've cared for!
+                Upload multiple images to showcase your space. First image will be used as the cover photo.
               </p>
             </div>
           </div>
@@ -931,7 +1054,7 @@ const Listing = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {myListings.map((listing) => {
                 // Get location for display
                 const location = listing.city && listing.state
@@ -958,116 +1081,137 @@ const Listing = () => {
                   return null;
                 })();
 
-                // Determine image source
-                const cardImage = listing.cover_image_url || listing.image_urls?.[0];
+                // Prepare image array for ImageGallery
+                const listingImages = [];
+                if (listing.cover_image_url) {
+                  listingImages.push(listing.cover_image_url);
+                }
+                if (listing.image_urls && listing.image_urls.length > 0) {
+                  listingImages.push(...listing.image_urls.filter(url => url !== listing.cover_image_url));
+                }
 
-                // Get gradient for service type
-                const getPlaceholderGradient = () => {
-                  const gradients = {
-                    boarding: 'from-blue-400 to-indigo-600',
-                    daycare: 'from-green-400 to-emerald-600',
-                    walking: 'from-amber-400 to-orange-600',
-                    grooming: 'from-purple-400 to-pink-600',
-                    default: 'from-gray-400 to-gray-600',
-                  };
-                  return gradients[listing.service_type?.[0]] || gradients.default;
-                };
+                // Get ratings for this listing
+                const ratings = listingRatings[listing.id] || { averageRating: 0, totalReviews: 0 };
 
                 return (
-                  <div key={listing.id} className="group">
-                    <div className="relative overflow-hidden rounded-xl">
-                      {/* Image Section */}
-                      <div className="relative aspect-[4/3] overflow-hidden bg-gray-200">
-                        {cardImage ? (
-                          <img
-                            src={cardImage}
-                            alt={listing.title}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className={`absolute inset-0 bg-gradient-to-br ${getPlaceholderGradient()} flex items-center justify-center`}>
-                            <svg className="w-16 h-16 text-white opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.5}
-                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                              />
-                            </svg>
-                          </div>
-                        )}
-
-                        {/* Status Badge */}
-                        <div className="absolute top-3 right-3">
-                          <span className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
-                            listing.is_active
-                              ? 'bg-green-500/90 text-white'
-                              : 'bg-gray-500/90 text-white'
-                          }`}>
-                            {listing.is_active ? '● Active' : '○ Inactive'}
-                          </span>
-                        </div>
-
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+                  <div key={listing.id} className="group bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-shadow duration-300 overflow-hidden">
+                    {/* Status Badge - Positioned over image */}
+                    <div className="relative">
+                      <div className="absolute top-3 left-3 z-1">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
+                          listing.is_active
+                            ? 'bg-green-500/90 text-white'
+                            : 'bg-gray-500/90 text-white'
+                        }`}>
+                          {listing.is_active ? '● Active' : '○ Inactive'}
+                        </span>
                       </div>
 
-                      {/* Info Section */}
-                      <div className="pt-3">
-                        {/* Location & Title */}
-                        <h3 className="text-sm font-semibold text-gray-900 truncate">
-                          {location}
-                        </h3>
-                        <p className="text-sm text-gray-600 truncate mt-0.5">
+                      {/* Image Gallery */}
+                      <ImageGallery images={listingImages} title={listing.title} />
+                    </div>
+
+                    {/* Listing Info */}
+                    <div className="p-4">
+                      {/* Title and Location */}
+                      <div className="mb-3">
+                        <h3 className="text-base font-bold text-gray-900 line-clamp-1">
                           {listing.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {location}
                         </p>
                         <p className="text-sm text-gray-500 capitalize mt-0.5">
                           {primaryService}
                         </p>
+                      </div>
 
-                        {/* Price */}
-                        <div className="mt-2">
-                          {priceDisplay ? (
-                            <p className="text-sm">
-                              <span className="font-semibold text-gray-900">${priceDisplay.value}</span>
-                              <span className="text-gray-600"> / {priceDisplay.unit}</span>
-                            </p>
-                          ) : (
-                            <p className="text-sm text-gray-500">Price upon request</p>
-                          )}
-                        </div>
+                      {/* Price */}
+                      <div className="mb-3">
+                        {priceDisplay ? (
+                          <p className="text-sm">
+                            <span className="font-bold text-lg text-gray-900">${priceDisplay.value}</span>
+                            <span className="text-gray-600 font-normal"> / {priceDisplay.unit}</span>
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-500">Price upon request</p>
+                        )}
+                      </div>
 
-                        {/* Action Buttons */}
-                        <div className="grid grid-cols-3 gap-2 mt-4">
-                          <button
-                            onClick={() => handleEdit(listing)}
-                            className="px-3 py-2 bg-[#fb7678] text-white text-xs rounded-lg hover:bg-[#fa6568] transition-colors font-medium flex items-center justify-center gap-1"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleToggleStatus(listing.id, listing.is_active)}
-                            className={`px-3 py-2 text-xs rounded-lg transition-colors font-medium ${
-                              listing.is_active
-                                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                                : 'bg-green-100 text-green-700 hover:bg-green-200'
-                            }`}
-                          >
-                            {listing.is_active ? 'Pause' : 'Activate'}
-                          </button>
-                          <button
-                            onClick={() => handleDelete(listing.id)}
-                            className="px-3 py-2 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition-colors font-medium flex items-center justify-center gap-1"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                            Delete
-                          </button>
+                      {/* Rating Display */}
+                      <div className="mb-3 pb-3 border-b border-gray-100">
+                        <RatingDisplay
+                          rating={ratings.averageRating}
+                          totalReviews={ratings.totalReviews}
+                          size="small"
+                          showCount={true}
+                        />
+                      </div>
+
+                      {/* Host Info */}
+                      <div className="flex items-center gap-3 mb-3">
+                        {profile?.avatar_url ? (
+                          <img
+                            src={profile.avatar_url}
+                            alt={profile.name}
+                            className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ffd189] to-[#ffb347] flex items-center justify-center text-white text-sm font-bold">
+                            {profile?.name?.charAt(0).toUpperCase() || 'S'}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            Hosted by {profile?.name || 'You'}
+                          </p>
                         </div>
+                      </div>
+
+                      {/* See All Reviews Button */}
+                      {ratings.totalReviews > 0 && (
+                        <button
+                          onClick={() => handleOpenReviewsModal(listing)}
+                          className="w-full mb-3 py-2 px-4 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                        >
+                          See all reviews
+                        </button>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => handleEdit(listing)}
+                          className="px-3 py-2 bg-[#fb7678] text-white text-xs rounded-lg hover:bg-[#fa6568] transition-colors font-medium flex items-center justify-center gap-1"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(listing.id, listing.is_active)}
+                          className={`px-3 py-2 text-xs rounded-lg transition-colors font-medium ${
+                            listing.is_active
+                              ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          }`}
+                        >
+                          {listing.is_active ? 'Pause' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(listing.id)}
+                          className="px-3 py-2 bg-red-100 text-red-600 text-xs rounded-lg hover:bg-red-200 transition-colors font-medium flex items-center justify-center gap-1"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Delete
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1075,9 +1219,19 @@ const Listing = () => {
               })}
             </div>
           )}
+
+          {/* Reviews Modal */}
+          <ReviewsModal
+            isOpen={reviewsModalOpen}
+            onClose={handleCloseReviewsModal}
+            sitterId={user?.id}
+            listingTitle={selectedListingForReviews?.title}
+          />
+        </div>
         </div>
       </div>
-    </div>
+    // </div>
+    
   );
 };
 

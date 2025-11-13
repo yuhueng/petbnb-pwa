@@ -23,6 +23,47 @@ CREATE TABLE profiles (
 );
 
 CREATE INDEX idx_profiles_last_role ON profiles(last_role);
+-- ============================================
+  -- PROFILE AVATARS BUCKET
+  -- ============================================
+
+  -- Create bucket for profile avatar images
+  INSERT INTO storage.buckets (id, name, public)
+  VALUES ('profile-avatars', 'profile-avatars', true)
+  ON CONFLICT (id) DO NOTHING;
+
+  -- Allow authenticated users to upload their profile avatars
+  CREATE POLICY "Allow users to upload own avatar"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    bucket_id = 'profile-avatars' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+  -- Allow public read access to profile avatars
+  CREATE POLICY "Allow public read of avatars"
+  ON storage.objects FOR SELECT
+  TO public
+  USING (bucket_id = 'profile-avatars');
+
+  -- Allow users to update their own avatars
+  CREATE POLICY "Allow users to update own avatar"
+  ON storage.objects FOR UPDATE
+  TO authenticated
+  USING (
+    bucket_id = 'profile-avatars' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+  -- Allow users to delete their own avatars
+  CREATE POLICY "Allow users to delete own avatar"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (
+    bucket_id = 'profile-avatars' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+  );
 
 -- ============================================
 -- 2. PETS (Linked to profiles - owners only)
@@ -601,6 +642,48 @@ CREATE POLICY "Allow users to delete own listing images"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (bucket_id = 'listing-images' AND owner = auth.uid());
+
+-- ============================================
+-- PROFILE AVATARS BUCKET
+-- ============================================
+
+-- Create bucket for profile avatar images
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('profile-avatars', 'profile-avatars', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Allow authenticated users to upload their profile avatars
+CREATE POLICY "Allow users to upload own avatar"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'profile-avatars' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Allow public read access to profile avatars
+CREATE POLICY "Allow public read of avatars"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'profile-avatars');
+
+-- Allow users to update their own avatars
+CREATE POLICY "Allow users to update own avatar"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'profile-avatars' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Allow users to delete their own avatars
+CREATE POLICY "Allow users to delete own avatar"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'profile-avatars' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
 
 -- ============================================
 -- PET ACTIVITIES - Activity Timeline Tracking

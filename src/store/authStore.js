@@ -134,6 +134,11 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  // Update user profile (direct state update, used after profile service calls)
+  updateUserProfile: (updatedProfile) => {
+    set({ profile: updatedProfile });
+  },
+
   // Switch role
   switchRole: async (role) => {
     const user = get().user;

@@ -13,7 +13,7 @@ const Layout = () => {
 
   const ownerTabs = [
     { name: 'Explore', path: '/owner/explore', icon: '/icons/tabs/home-icon.svg' },
-    { name: 'Wishlist', path: '/owner/wishlist', icon: '/icons/tabs/listing-icon.svg' },
+    { name: 'Wishlist', path: '/owner/wishlist', icon: '/icons/tabs/heart-icon.svg' },
     { name: 'Bookings', path: '/owner/bookings', icon: '/icons/tabs/certifications-icon.svg' },
     { name: 'Messages', path: '/owner/messages', icon: '/icons/tabs/message-icon.svg' },
     { name: 'Profile', path: '/owner/profile', icon: '/icons/tabs/profile-icon.svg' },

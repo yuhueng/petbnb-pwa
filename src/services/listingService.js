@@ -200,6 +200,95 @@ class ListingService {
     console.log('✅ Listing status toggled:', data.id);
     return data;
   }
+
+  /**
+   * Upload multiple listing images
+   * @param {File[]} files - Array of image files to upload
+   * @param {string} listingId - Listing ID for folder organization
+   * @returns {Promise<string[]>} Array of public URLs
+   */
+  async uploadListingImages(files, listingId) {
+    console.log('📤 Uploading', files.length, 'listing images for:', listingId);
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    const uploadedUrls = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      // Validate file type
+      if (!validTypes.includes(file.type)) {
+        throw new Error(`Invalid file type for ${file.name}. Only JPG, PNG, and WEBP are allowed.`);
+      }
+
+      // Validate file size
+      if (file.size > maxSize) {
+        throw new Error(`File ${file.name} is too large. Maximum size is 5MB.`);
+      }
+
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${listingId}/image-${Date.now()}-${i}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('listing-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) {
+        console.error('❌ Failed to upload image:', error.message);
+        throw new Error(error.message);
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('listing-images')
+        .getPublicUrl(fileName);
+
+      uploadedUrls.push(publicUrlData.publicUrl);
+      console.log('✅ Uploaded image', i + 1, 'of', files.length);
+    }
+
+    console.log('✅ All images uploaded successfully');
+    return uploadedUrls;
+  }
+
+  /**
+   * Delete listing image from storage
+   * @param {string} imageUrl - Full URL of the image to delete
+   * @returns {Promise<boolean>} Success status
+   */
+  async deleteListingImage(imageUrl) {
+    try {
+      if (!imageUrl) return true;
+
+      // Extract file path from URL
+      const urlParts = imageUrl.split('/listing-images/');
+      if (urlParts.length < 2) {
+        throw new Error('Invalid image URL');
+      }
+      const filePath = urlParts[1];
+
+      // Delete from storage
+      const { error } = await supabase.storage
+        .from('listing-images')
+        .remove([filePath]);
+
+      if (error) throw error;
+
+      console.log('✅ Image deleted from storage');
+      return true;
+    } catch (error) {
+      console.error('❌ Error deleting image:', error);
+      // Don't fail the whole operation if delete fails
+      return false;
+    }
+  }
 }
 
 // Export singleton instance

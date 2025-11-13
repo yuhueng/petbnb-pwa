@@ -29,6 +29,11 @@ const Dashboard = () => {
   // Timeline Activities
   const [todayActivities, setTodayActivities] = useState([]);
 
+  // Timeline Modal for Past Bookings
+  const [timelineModalOpen, setTimelineModalOpen] = useState(false);
+  const [selectedPastBooking, setSelectedPastBooking] = useState(null);
+  const [pastBookingActivities, setPastBookingActivities] = useState([]);
+
   // Fetch sitter bookings on mount
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -134,6 +139,34 @@ const Dashboard = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedBooking(null);
+  };
+
+  // Handle past booking click - show timeline
+  const handlePastBookingClick = async (booking) => {
+    setSelectedPastBooking(booking);
+    setTimelineModalOpen(true);
+
+    // Fetch all activities for this booking
+    try {
+      const result = await petActivityService.getActivitiesByBooking(booking.id);
+      if (result.success) {
+        setPastBookingActivities(result.data);
+      } else {
+        setPastBookingActivities([]);
+        toast.error('Failed to load activities');
+      }
+    } catch (error) {
+      console.error('Failed to fetch booking activities:', error);
+      setPastBookingActivities([]);
+      toast.error('Failed to load activities');
+    }
+  };
+
+  // Close timeline modal
+  const handleCloseTimelineModal = () => {
+    setTimelineModalOpen(false);
+    setSelectedPastBooking(null);
+    setPastBookingActivities([]);
   };
 
   // Navigate to chat with owner
@@ -645,7 +678,17 @@ const Dashboard = () => {
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1.5">
                               {/* Owner Avatar */}
-                              <div className="w-[27px] h-[27px] rounded-full bg-gradient-to-br from-[#ffd189] to-[#ffb347] flex-shrink-0"></div>
+                              {booking.owner?.avatar_url ? (
+                                <img
+                                  src={booking.owner.avatar_url}
+                                  alt={booking.owner.name}
+                                  className="w-[27px] h-[27px] rounded-full object-cover border border-gray-200 flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-[27px] h-[27px] rounded-full bg-gradient-to-br from-[#ffd189] to-[#ffb347] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                                  {booking.owner?.name?.charAt(0).toUpperCase() || 'O'}
+                                </div>
+                              )}
 
                               <div className="flex flex-col gap-px">
                                 <p className="text-xs font-medium text-black leading-normal">
@@ -683,94 +726,94 @@ const Dashboard = () => {
 
             {/* Pet's Routine Section - Only show for current bookings */}
             {activeTab === 'current' && currentBookings.length > 0 && (
-              <div className="px-3">
-                <div className="bg-[#fb7678e6] rounded-[10px] p-3 shadow-[0_4px_12px_rgba(251,118,120,0.3)] mx-auto">
-                  <h2 className="text-base font-extrabold text-white mb-3.5">Pet Care Routine</h2>
+              <div className="px-4">
+                <div className="bg-[#fb7678e6] rounded-[10px] p-3 sm:p-4 shadow-[0_4px_12px_rgba(251,118,120,0.3)]">
+                  <h2 className="text-sm sm:text-base font-extrabold text-white mb-3 sm:mb-4 text-center">Pet Care Routine</h2>
 
-                  <div className="flex gap-2.5 overflow-x-auto pb-6 flex justify-center">
+                  <div className="flex gap-2 sm:gap-3 justify-center items-start pb-5 sm:pb-6">
 
                     {/* Walk Card */}
-                      <div className="flex-shrink-0 w-[106px]">
-                        <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-300"
-                            onClick={() => handleActivityClick('walk')}>
+                    <div className="flex-shrink-0 w-[92px] sm:w-[106px]">
+                      <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] active:scale-95 transition-all duration-300"
+                          onClick={() => handleActivityClick('walk')}>
 
-                          {/* Top colored bar */}
-                          <div className="w-full h-[15px] bg-[#ffc369] rounded-t-[10px]"></div>
+                        {/* Top colored bar */}
+                        <div className="w-full h-[12px] sm:h-[15px] bg-[#ffc369] rounded-t-[10px]"></div>
 
-                          {/* Content - using flex column */}
-                          <div className="flex flex-col items-center px-3 pb-8 pt-1.5">
-                            {/* Title */}
-                            <p className="text-base font-bold text-[#ffc369] mb-2">Walk</p>
+                        {/* Content - using flex column */}
+                        <div className="flex flex-col items-center px-2 sm:px-3 pb-6 sm:pb-7 pt-1 sm:pt-1.5">
+                          {/* Title */}
+                          <p className="text-xs sm:text-base font-bold text-[#ffc369] mb-1.5 sm:mb-2">Walk</p>
 
-                            {/* Main icon box */}
-                            <div className="w-[54px] h-[54px] rounded-[10px] bg-gradient-to-br from-[#ffc36933] to-[#ffb34733] flex items-center justify-center text-2xl">
-                              <img src="/icons/common/walk-icon.svg" alt="Pet" className="w-8 h-8" />
-                            </div>
-
-                            {/* Bottom circular icon - positioned relative to flow */}
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-                              <img src="/icons/common/add-yellow-icon.svg" alt="Feed" className="w-10 h-10 shadow-md bg-white rounded-full" />
-                            </div>
-                      
-                          </div>
-                        </div>
-                      </div>
-
-
-                      {/* Feed Card - With Floating Bottom Icon */}
-                      <div className="flex-shrink-0 w-[106px]">
-                        <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-300"
-                            onClick={() => handleActivityClick('feed')}>
-
-                          {/* Top colored bar */}
-                          <div className="w-full h-[15px] bg-[#a2d08a] rounded-t-[10px]"></div>
-
-                          {/* Content - using flex column */}
-                          <div className="flex flex-col items-center px-3 pb-8 pt-1.5">
-                            {/* Title */}
-                            <p className="text-base font-bold text-[#a2d08a] mb-2">Feed</p>
-
-                            {/* Main icon box */}
-                            <div className="w-[54px] h-[54px] rounded-[10px] bg-gradient-to-br from-[#a2d08a33] to-[#8bc57433] flex items-center justify-center text-2xl">
-                              <img src="/icons/common/feed-icon.svg" alt="Pet" className="w-8 h-8" />
-                            </div>
+                          {/* Main icon box */}
+                          <div className="w-[44px] h-[44px] sm:w-[54px] sm:h-[54px] rounded-[8px] sm:rounded-[10px] bg-gradient-to-br from-[#ffc36933] to-[#ffb34733] flex items-center justify-center">
+                            <img src="/icons/common/walk-icon.svg" alt="Walk" className="w-6 h-6 sm:w-8 sm:h-8" />
                           </div>
 
-                          {/* Floating bottom icon - positioned absolutely */}
+                          {/* Bottom circular icon - positioned relative to flow */}
                           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-                              <img src="/icons/common/add-green-icon.svg" alt="Feed" className="w-10 h-10 shadow-md bg-white rounded-full" />
-                            </div>
-                        </div>
-                      </div>
-
-
-                      {/* Play Card - With Floating Bottom Icon */}
-                      <div className="flex-shrink-0 w-[106px]">
-                        <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] transition-all duration-300"
-                            onClick={() => handleActivityClick('play')}>
-
-                          {/* Top colored bar */}
-                          <div className="w-full h-[15px] bg-[#c0a7fe] rounded-t-[10px]"></div>
-
-                          {/* Content - using flex column */}
-                          <div className="flex flex-col items-center px-3 pb-8 pt-1.5">
-                            {/* Title */}
-                            <p className="text-base font-bold text-[#c0a7fe] mb-2">Play</p>
-
-                            {/* Main icon box */}
-                            <div className="w-[54px] h-[54px] rounded-[10px] bg-gradient-to-br from-[#c0a7fe33] to-[#a88fec33] flex items-center justify-center text-2xl">
-                              <img src="/icons/common/play-icon.svg" alt="Pet" className="w-8 h-8" />
-                            </div>
+                            <img src="/icons/common/add-yellow-icon.svg" alt="Add Walk" className="w-8 h-8 sm:w-10 sm:h-10 shadow-md bg-white rounded-full" />
                           </div>
 
-                          {/* Floating bottom icon - positioned absolutely */}
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-                              <img src="/icons/common/add-purple-icon.svg" alt="Feed" className="w-10 h-10 shadow-md bg-white rounded-full" />
-                            </div>
                         </div>
                       </div>
+                    </div>
 
-                    
+
+                    {/* Feed Card - With Floating Bottom Icon */}
+                    <div className="flex-shrink-0 w-[92px] sm:w-[106px]">
+                      <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] active:scale-95 transition-all duration-300"
+                          onClick={() => handleActivityClick('feed')}>
+
+                        {/* Top colored bar */}
+                        <div className="w-full h-[12px] sm:h-[15px] bg-[#a2d08a] rounded-t-[10px]"></div>
+
+                        {/* Content - using flex column */}
+                        <div className="flex flex-col items-center px-2 sm:px-3 pb-6 sm:pb-7 pt-1 sm:pt-1.5">
+                          {/* Title */}
+                          <p className="text-xs sm:text-base font-bold text-[#a2d08a] mb-1.5 sm:mb-2">Feed</p>
+
+                          {/* Main icon box */}
+                          <div className="w-[44px] h-[44px] sm:w-[54px] sm:h-[54px] rounded-[8px] sm:rounded-[10px] bg-gradient-to-br from-[#a2d08a33] to-[#8bc57433] flex items-center justify-center">
+                            <img src="/icons/common/feed-icon.svg" alt="Feed" className="w-6 h-6 sm:w-8 sm:h-8" />
+                          </div>
+                        </div>
+
+                        {/* Floating bottom icon - positioned absolutely */}
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
+                          <img src="/icons/common/add-green-icon.svg" alt="Add Feed" className="w-8 h-8 sm:w-10 sm:h-10 shadow-md bg-white rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+
+
+                    {/* Play Card - With Floating Bottom Icon */}
+                    <div className="flex-shrink-0 w-[92px] sm:w-[106px]">
+                      <div className="relative bg-white rounded-[10px] overflow-visible cursor-pointer hover:-translate-y-1 hover:shadow-[0_6px_16px_rgba(0,0,0,0.15)] active:scale-95 transition-all duration-300"
+                          onClick={() => handleActivityClick('play')}>
+
+                        {/* Top colored bar */}
+                        <div className="w-full h-[12px] sm:h-[15px] bg-[#c0a7fe] rounded-t-[10px]"></div>
+
+                        {/* Content - using flex column */}
+                        <div className="flex flex-col items-center px-2 sm:px-3 pb-6 sm:pb-7 pt-1 sm:pt-1.5">
+                          {/* Title */}
+                          <p className="text-xs sm:text-base font-bold text-[#c0a7fe] mb-1.5 sm:mb-2">Play</p>
+
+                          {/* Main icon box */}
+                          <div className="w-[44px] h-[44px] sm:w-[54px] sm:h-[54px] rounded-[8px] sm:rounded-[10px] bg-gradient-to-br from-[#c0a7fe33] to-[#a88fec33] flex items-center justify-center">
+                            <img src="/icons/common/play-icon.svg" alt="Play" className="w-6 h-6 sm:w-8 sm:h-8" />
+                          </div>
+                        </div>
+
+                        {/* Floating bottom icon - positioned absolutely */}
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
+                          <img src="/icons/common/add-purple-icon.svg" alt="Add Play" className="w-8 h-8 sm:w-10 sm:h-10 shadow-md bg-white rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+
+
                   </div>
                 </div>
               </div>
@@ -971,25 +1014,66 @@ const Dashboard = () => {
                 </h2>
                 {pastBookings.map(booking => (
                   <div key={booking.id}
-                       onClick={() => handleBookingClick(booking)}
-                       className="bg-white rounded-[10px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer opacity-90">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-sm font-semibold text-black">{booking.listing?.title}</h3>
-                      {getStatusBadge(booking.status)}
-                    </div>
-                    <p className="text-xs text-[#6d6d6d] mb-2">
-                      {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
-                    </p>
-                    <div className="flex items-center justify-between pt-2 border-t border-[#e5e5e5]">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#ffd189] to-[#ffb347]"></div>
-                        <span className="text-xs font-medium text-black">{booking.owner?.name}</span>
+                       onClick={() => handlePastBookingClick(booking)}
+                       className="bg-white rounded-[10px] p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
+                    <div className="flex gap-3">
+                      {/* Pet Image/Icon */}
+                      <div className="w-[74px] h-[70px] rounded-[10px] bg-gradient-to-br from-[#fb7678]/50 to-[#ffa8aa]/50 flex items-center justify-center text-3xl flex-shrink-0">
+                        🐶
                       </div>
-                      {booking.total_price && (
-                        <span className="text-sm font-bold text-[#3e2d2e]">
-                          ${(booking.total_price / 100).toFixed(2)}
-                        </span>
-                      )}
+
+                      {/* Booking Info */}
+                      <div className="flex-1 flex flex-col">
+                        {/* Title and Status */}
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium text-black leading-normal">
+                              {booking.listing?.title || 'Pet Sitting Service'}
+                            </p>
+                            {getStatusBadge(booking.status)}
+                          </div>
+                          <p className="text-[10px] font-light text-[#535353] leading-normal">
+                            {new Date(booking.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(booking.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                          <div className="h-px bg-[#e5e5e5] my-1"></div>
+                        </div>
+
+                        {/* Owner and Price */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            {booking.owner?.avatar_url ? (
+                              <img
+                                src={booking.owner.avatar_url}
+                                alt={booking.owner.name}
+                                className="w-[27px] h-[27px] rounded-full object-cover border border-gray-200 flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-[27px] h-[27px] rounded-full bg-gradient-to-br from-[#ffd189] to-[#ffb347] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                                {booking.owner?.name?.charAt(0).toUpperCase() || 'O'}
+                              </div>
+                            )}
+                            <p className="text-xs font-medium text-black leading-normal">
+                              {booking.owner?.name || 'Owner'}
+                            </p>
+                          </div>
+
+                          {booking.total_price && (
+                            <span className="text-sm font-bold text-[#3e2d2e]">
+                              ${(booking.total_price / 100).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* View Timeline Button */}
+                        <div className="mt-2">
+                          <div className="flex items-center gap-1 text-[#fb7678] text-xs font-semibold">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>View Timeline</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1157,7 +1241,7 @@ const Dashboard = () => {
                */}
               <div className="mb-4 flex justify-center">
                 <img 
-                  src="/public/icons/common/pawtastic-icon.svg"
+                  src="/icons/common/pawtastic-icon.svg"
                   alt="Pawtastic" 
                   className="w-[100px] h-[100px]"
                 />
@@ -1325,6 +1409,144 @@ const Dashboard = () => {
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Timeline Modal for Past Bookings */}
+        {timelineModalOpen && selectedPastBooking && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+              onClick={handleCloseTimelineModal}
+            />
+
+            {/* Modal */}
+            <div className="flex min-h-full items-end sm:items-center justify-center">
+              <div className="relative bg-white rounded-t-[20px] sm:rounded-[20px] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Close Button */}
+                <button
+                  onClick={handleCloseTimelineModal}
+                  className="sticky top-4 right-4 z-10 float-right p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                {/* Header */}
+                <div className="p-6 pb-4">
+                  <h2 className="text-base font-bold text-[#3e2d2e] mb-1">
+                    {selectedPastBooking.listing?.title || 'Pet Sitting Service'} - Timeline
+                  </h2>
+                  <p className="text-base font-semibold text-[#fe8c85]">
+                    {new Date(selectedPastBooking.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {new Date(selectedPastBooking.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
+
+                {/* Timeline Content */}
+                <div className="px-6 pb-6">
+                  {pastBookingActivities.length > 0 ? (
+                    <div className="space-y-6">
+                      {/* Group activities by date */}
+                      {Object.entries(
+                        pastBookingActivities.reduce((groups, activity) => {
+                          const date = new Date(activity.activity_date).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric'
+                          });
+                          if (!groups[date]) groups[date] = [];
+                          groups[date].push(activity);
+                          return groups;
+                        }, {})
+                      ).map(([date, activities]) => (
+                        <div key={date}>
+                          <h3 className="text-base font-semibold text-[#fe8c85] mb-4">{date}</h3>
+
+                          <div className="space-y-4">
+                            {activities.map((activity, index) => {
+                              const isLast = index === activities.length - 1;
+                              const activityColors = {
+                                walk: { bg: '#ffd189', icon: '🚶' },
+                                feed: { bg: '#a2d08a', icon: '🍖' },
+                                play: { bg: '#c0a7fe', icon: '🎾' }
+                              };
+                              const color = activityColors[activity.activity_type] || activityColors.walk;
+
+                              return (
+                                <div key={activity.id} className="flex gap-3">
+                                  {/* Timeline indicator */}
+                                  <div className="flex flex-col items-center">
+                                    <div
+                                      className="w-[42px] h-[42px] rounded-full flex items-center justify-center text-xl flex-shrink-0"
+                                      style={{ backgroundColor: color.bg }}
+                                    >
+                                      {color.icon}
+                                    </div>
+                                    {!isLast && (
+                                      <div
+                                        className="w-[2px] flex-1 min-h-[60px]"
+                                        style={{
+                                          background: `linear-gradient(180deg, ${color.bg} 0%, ${activityColors[activities[index + 1]?.activity_type]?.bg || color.bg} 100%)`
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+
+                                  {/* Activity content */}
+                                  <div className="flex-1 pb-4">
+                                    <div className="flex items-start justify-between mb-1">
+                                      <h4 className="text-sm font-semibold text-black capitalize">
+                                        {activity.activity_type}
+                                      </h4>
+                                      <span className="text-xs text-[#6d6d6d]">
+                                        {new Date(activity.created_at).toLocaleTimeString('en-US', {
+                                          hour: 'numeric',
+                                          minute: '2-digit',
+                                          hour12: true
+                                        })}
+                                      </span>
+                                    </div>
+
+                                    {activity.notes && (
+                                      <p className="text-xs text-[#6d6d6d] mb-2 leading-relaxed">
+                                        {activity.notes}
+                                      </p>
+                                    )}
+
+                                    {activity.image_urls && activity.image_urls.length > 0 && (
+                                      <div className="grid grid-cols-3 gap-2 mt-2">
+                                        {activity.image_urls.map((url, imgIndex) => (
+                                          <img
+                                            key={imgIndex}
+                                            src={url}
+                                            alt={`Activity ${imgIndex + 1}`}
+                                            className="w-full aspect-square object-cover rounded-[10px]"
+                                          />
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="text-5xl mb-3">📝</div>
+                      <h3 className="text-lg font-bold text-[#3e2d2e] mb-2">No Activities Logged</h3>
+                      <p className="text-sm text-[#6d6d6d]">
+                        No activities were recorded for this booking
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

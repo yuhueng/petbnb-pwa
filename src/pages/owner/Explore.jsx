@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useListingStore } from '@/store/listingStore';
 import { useAuthStore } from '@/store/authStore';
-import SitterCard from '@/components/owner/SitterCard';
+import { usePetStore } from '@/store/petStore';
+import RecommendationCard from '@/components/owner/RecommendationCard';
 import ListingDetailModal from '@/components/owner/ListingDetailModal';
 import ProfileModal from '@/components/common/ProfileModal';
 import { parseSearchQuery, convertToListingFilters } from '@/services/aiSearchService';
 import { wishlistService } from '@/services/wishlistService';
 import toast from 'react-hot-toast';
+import RecommendationCard2 from '../../components/owner/RecommendationCard2';
 
 const Explore = () => {
   const { listings, isLoading, error, fetchListings } = useListingStore();
   const { user } = useAuthStore();
+  const { pets, fetchPets } = usePetStore();
+
   const [filters, setFilters] = useState({
     city: '',
     service_type: '',
@@ -26,6 +30,25 @@ const Explore = () => {
   const [wishlistIds, setWishlistIds] = useState(new Set());
   const [profileUserId, setProfileUserId] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [visibleGenericListings, setVisibleGenericListings] = useState(10);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Handle window resize for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch user's pets on mount
+  useEffect(() => {
+    if (user) {
+      fetchPets(user.id);
+    }
+  }, [user, fetchPets]);
 
   // Fetch listings on mount, excluding current user's listings
   useEffect(() => {
@@ -91,7 +114,7 @@ const Explore = () => {
 
   // Handle filter change
   const handleFilterChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value} = e.target;
     setFilters((prev) => ({
       ...prev,
       [name]: value,
@@ -183,18 +206,83 @@ const Explore = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-xl sm:text-2xl font-bold text-text-primary mb-4">Explore Pet Sitters</h1>
+  // Get user's pet types for recommendations
+  const getUserPetTypes = () => {
+    if (!pets || pets.length === 0) return [];
+    return [...new Set(pets.map(pet => pet.species))];
+  };
 
-          {/* Search Bar */}
+  // Get recommended listings based on user's pets
+  const getPetBasedRecommendations = () => {
+    const userPetTypes = getUserPetTypes();
+    if (userPetTypes.length === 0) return [];
+
+    return listings.filter(listing => {
+      // Check if listing accepts any of user's pet types
+      return userPetTypes.some(petType =>
+        listing.accepted_pet_types?.includes(petType)
+      );
+    }).slice(0, 10); // Limit to 10 recommendations
+  };
+
+  // Get generic listings (not including pet-based recommendations)
+  const getGenericListings = () => {
+    const petRecommendations = getPetBasedRecommendations();
+    const petRecommendationIds = new Set(petRecommendations.map(l => l.id));
+
+    return listings.filter(listing => !petRecommendationIds.has(listing.id));
+  };
+
+  // Load more generic listings
+  const handleLoadMore = () => {
+    setVisibleGenericListings(prev => prev + 10);
+  };
+
+  // Scroll functions for arrow navigation
+  const scrollContainer = (containerId, direction) => {
+    const container = document.getElementById(containerId);
+    if (container) {
+      const scrollAmount = 300; // Scroll by 300px
+      const newScrollLeft = direction === 'left'
+        ? container.scrollLeft - scrollAmount
+        : container.scrollLeft + scrollAmount;
+
+      container.scrollTo({
+        left: newScrollLeft,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const userPetTypes = getUserPetTypes();
+  const petRecommendations = getPetBasedRecommendations();
+  const genericListings = getGenericListings();
+  const visibleGenericList = genericListings.slice(0, visibleGenericListings);
+
+  return (
+    <>
+      {/* Global styles for hiding scrollbar on desktop */}
+      <style>
+        {`
+          @media (min-width: 768px) {
+            #pet-recommendations-scroll::-webkit-scrollbar,
+            #generic-listings-scroll::-webkit-scrollbar {
+              display: none;
+            }
+          }
+        `}
+      </style>
+
+      <div className="relative w-full min-h-screen" style={{ backgroundColor: '#fef5f6' }}>
+      {/* Header - Fixed Search Bar - Full Width */}
+      <div className="bg-white w-full" style={{ boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.25)' }}>
+        <div className="w-full px-4 py-4 mx-auto" style={{ maxWidth: isMobile ? '100%' : '1200px' }}>
+          {/* Search Bar with Filter Icon */}
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="flex-1 relative">
               <svg
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
+                style={{ color: '#909090' }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -210,51 +298,69 @@ const Explore = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Describe what you're looking for... (e.g., 'dog sitter in Brooklyn with a fenced yard')"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="Search house sitters..."
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 focus:outline-none focus:border-[#fb7678]"
+                style={{
+                  borderRadius: '24px',
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px',
+                  backgroundColor: 'white'
+                }}
                 disabled={aiSearching}
               />
             </div>
             <button
               type="submit"
               disabled={aiSearching}
-              className="px-6 py-2 bg-primary-600 text-text-inverse rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-3 text-white font-semibold transition-all duration-300"
+              style={{
+                backgroundColor: '#fb7678',
+                borderRadius: '24px',
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '14px',
+                opacity: aiSearching ? 0.5 : 1
+              }}
             >
               {aiSearching ? (
-                <>
-                  <svg
-                    className="animate-spin h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Searching...
-                </>
+                <svg
+                  className="animate-spin h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
               ) : (
                 'Search'
               )}
             </button>
+            {/* Filter Icon Button */}
             <button
               type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+              className="px-3 py-3 border transition-all duration-300"
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '24px',
+                borderColor: '#e5e5e5'
+              }}
+              title="Filter"
             >
               <svg
                 className="w-5 h-5"
+                style={{ color: '#6d6d6d' }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -266,57 +372,57 @@ const Explore = () => {
                   d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
                 />
               </svg>
-              Filters
             </button>
           </form>
 
           {/* AI Understanding Display */}
           {aiUnderstanding && (
-            <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="w-6 h-6 text-indigo-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                    />
-                  </svg>
-                </div>
+            <div className="mt-3 p-3 border" style={{
+              backgroundColor: 'rgba(251, 118, 120, 0.1)',
+              borderColor: '#fb7678',
+              borderRadius: '10px'
+            }}>
+              <div className="flex items-start gap-2">
                 <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-indigo-900 mb-1">AI Understanding:</h3>
-                  <p className="text-sm text-indigo-800">{aiUnderstanding}</p>
+                  <p className="text-sm font-medium" style={{
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#3e2d2e'
+                  }}>
+                    {aiUnderstanding}
+                  </p>
                   {aiParsedCriteria && (
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {aiParsedCriteria.city && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        <span className="text-xs px-2 py-1" style={{
+                          backgroundColor: '#fcf3f3',
+                          color: '#fb7678',
+                          borderRadius: '12px',
+                          fontFamily: "'Inter', sans-serif",
+                          fontWeight: 600
+                        }}>
                           📍 {aiParsedCriteria.city}
                         </span>
                       )}
                       {aiParsedCriteria.service_type && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        <span className="text-xs px-2 py-1" style={{
+                          backgroundColor: '#fcf3f3',
+                          color: '#fb7678',
+                          borderRadius: '12px',
+                          fontFamily: "'Inter', sans-serif",
+                          fontWeight: 600
+                        }}>
                           🏠 {aiParsedCriteria.service_type}
                         </span>
                       )}
                       {aiParsedCriteria.accepted_pet_types && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                        <span className="text-xs px-2 py-1" style={{
+                          backgroundColor: '#fcf3f3',
+                          color: '#fb7678',
+                          borderRadius: '12px',
+                          fontFamily: "'Inter', sans-serif",
+                          fontWeight: 600
+                        }}>
                           🐾 {aiParsedCriteria.accepted_pet_types}
-                        </span>
-                      )}
-                      {aiParsedCriteria.accepted_pet_sizes && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                          📏 {aiParsedCriteria.accepted_pet_sizes.join(', ')}
-                        </span>
-                      )}
-                      {aiParsedCriteria.amenities && aiParsedCriteria.amenities.length > 0 && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                          ✨ {aiParsedCriteria.amenities.join(', ')}
                         </span>
                       )}
                     </div>
@@ -327,7 +433,7 @@ const Explore = () => {
                     setAiUnderstanding(null);
                     setAiParsedCriteria(null);
                   }}
-                  className="flex-shrink-0 text-indigo-400 hover:text-indigo-600"
+                  style={{ color: '#fb7678' }}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -344,28 +450,50 @@ const Explore = () => {
 
           {/* Filters Panel */}
           {showFilters && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mt-3 p-3" style={{
+              backgroundColor: 'white',
+              borderRadius: '10px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+            }}>
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">City</label>
+                  <label className="block text-sm font-medium mb-1" style={{
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#3e2d2e'
+                  }}>
+                    City
+                  </label>
                   <input
                     type="text"
                     name="city"
                     value={filters.city}
                     onChange={handleFilterChange}
                     placeholder="e.g., New York"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 focus:outline-none focus:border-[#fb7678]"
+                    style={{
+                      borderRadius: '10px',
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px'
+                    }}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className="block text-sm font-medium mb-1" style={{
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#3e2d2e'
+                  }}>
                     Service Type
                   </label>
                   <select
                     name="service_type"
                     value={filters.service_type}
                     onChange={handleFilterChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 focus:outline-none focus:border-[#fb7678]"
+                    style={{
+                      borderRadius: '10px',
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px'
+                    }}
                   >
                     <option value="">All Services</option>
                     <option value="boarding">Pet Boarding</option>
@@ -375,12 +503,22 @@ const Explore = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Pet Type</label>
+                  <label className="block text-sm font-medium mb-1" style={{
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#3e2d2e'
+                  }}>
+                    Pet Type
+                  </label>
                   <select
                     name="accepted_pet_types"
                     value={filters.accepted_pet_types}
                     onChange={handleFilterChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 focus:outline-none focus:border-[#fb7678]"
+                    style={{
+                      borderRadius: '10px',
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '14px'
+                    }}
                   >
                     <option value="">All Pets</option>
                     <option value="dog">Dog</option>
@@ -395,13 +533,26 @@ const Explore = () => {
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={handleApplyFilters}
-                  className="px-4 py-2 bg-primary-600 text-text-inverse rounded-lg font-medium hover:bg-primary-700 transition-colors"
+                  className="px-4 py-2 text-white font-semibold transition-all duration-300"
+                  style={{
+                    backgroundColor: '#fb7678',
+                    borderRadius: '30px',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '12px'
+                  }}
                 >
                   Apply Filters
                 </button>
                 <button
                   onClick={handleClearFilters}
-                  className="px-4 py-2 bg-gray-200 text-text-secondary rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                  className="px-4 py-2 font-semibold transition-all duration-300"
+                  style={{
+                    backgroundColor: '#f5f5f5',
+                    color: '#737373',
+                    borderRadius: '30px',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '12px'
+                  }}
                 >
                   Clear All
                 </button>
@@ -412,21 +563,31 @@ const Explore = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="px-4 py-5 pb-24 mx-auto" style={{ maxWidth: isMobile ? '100%' : '1200px' }}>
         {/* Loading State */}
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mb-4"></div>
-            <p className="text-text-secondary">Loading pet sitters...</p>
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2" style={{ borderColor: '#fb7678' }}></div>
+            <p className="mt-4 text-sm" style={{
+              fontFamily: "'Inter', sans-serif",
+              color: '#6d6d6d'
+            }}>
+              Loading pet sitters...
+            </p>
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="p-4 border mb-4" style={{
+            backgroundColor: '#fef5f6',
+            borderColor: '#fb7678',
+            borderRadius: '10px'
+          }}>
             <div className="flex items-center">
               <svg
-                className="w-5 h-5 text-red-600 mr-2"
+                className="w-5 h-5 mr-2"
+                style={{ color: '#fb7678' }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -438,60 +599,241 @@ const Explore = () => {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span className="text-text-error-dark">{error}</span>
+              <span style={{
+                fontFamily: "'Inter', sans-serif",
+                color: '#3e2d2e',
+                fontSize: '14px'
+              }}>
+                {error}
+              </span>
             </div>
           </div>
         )}
 
-        {/* Results Count */}
+        {/* Content Sections - Only show when not loading and no error */}
         {!isLoading && !error && (
-          <div className="mb-4">
-            <p className="text-sm text-text-secondary">
-              {listings.length} {listings.length === 1 ? 'sitter' : 'sitters'} found
-            </p>
-          </div>
-        )}
+          <>
+            {/* Pet-Based Recommendations Row */}
+            {userPetTypes.length > 0 && petRecommendations.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-bold" style={{
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#3e2d2e'
+                  }}>
+                    Recommended for your {userPetTypes.map(type => type.charAt(0).toUpperCase() + type.slice(1)).join(', ')}
+                  </h2>
 
-        {/* Empty State */}
-        {!isLoading && !error && listings.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <svg
-              className="w-24 h-24 text-text-disabled mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <h3 className="text-xl font-semibold text-text-primary mb-2">No sitters found</h3>
-            <p className="text-text-secondary mb-6">Try adjusting your search or filters</p>
-            <button
-              onClick={handleClearFilters}
-              className="px-6 py-2 bg-primary-600 text-text-inverse rounded-lg font-medium hover:bg-primary-700 transition-colors"
-            >
-              Clear Filters
-            </button>
-          </div>
-        )}
+                  {/* Desktop Arrow Navigation */}
+                  {!isMobile && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => scrollContainer('pet-recommendations-scroll', 'left')}
+                        className="p-2 rounded-full transition-all duration-200"
+                        style={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e5e5',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef5f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                        aria-label="Scroll left"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => scrollContainer('pet-recommendations-scroll', 'right')}
+                        className="p-2 rounded-full transition-all duration-200"
+                        style={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e5e5',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef5f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                        aria-label="Scroll right"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-        {/* Listings Grid */}
-        {!isLoading && !error && listings.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {listings.map((listing) => (
-              <SitterCard
-                key={listing.id}
-                listing={listing}
-                onClick={() => handleListingClick(listing)}
-                isInWishlist={wishlistIds.has(listing.id)}
-                onToggleWishlist={(e) => handleToggleWishlist(e, listing.id)}
-              />
-            ))}
-          </div>
+                {/* Horizontal Scrolling Container */}
+                <div className="relative">
+                  <div
+                    id="pet-recommendations-scroll"
+                    className="overflow-x-auto pb-3 -mx-4 px-4"
+                    style={{
+                      scrollbarWidth: isMobile ? 'thin' : 'none',
+                      scrollbarColor: '#fb7678 #fef5f6',
+                      msOverflowStyle: isMobile ? 'auto' : 'none'
+                    }}
+                  >
+                    <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
+                      {petRecommendations.map((listing) => (
+                        <div key={listing.id} className="flex-shrink-0" style={{ width: '400px', height: '200px' }}>
+                          <RecommendationCard
+                            listing={listing}
+                            onClick={() => handleListingClick(listing)}
+                            isInWishlist={wishlistIds.has(listing.id)}
+                            onToggleWishlist={(e) => handleToggleWishlist(e, listing.id)}
+                            compact={true}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Generic Listings Row */}
+            {visibleGenericList.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-bold" style={{
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#3e2d2e'
+                  }}>
+                    More Pet Sitters Near You
+                  </h2>
+
+                  {/* Desktop Arrow Navigation */}
+                  {!isMobile && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => scrollContainer('generic-listings-scroll', 'left')}
+                        className="p-2 rounded-full transition-all duration-200"
+                        style={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e5e5',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef5f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                        aria-label="Scroll left"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => scrollContainer('generic-listings-scroll', 'right')}
+                        className="p-2 rounded-full transition-all duration-200"
+                        style={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e5e5',
+                          cursor: 'pointer'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fef5f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                        aria-label="Scroll right"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d6d6d" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Horizontal Scrolling Container for Houses */}
+                <div className="relative">
+                  <div
+                    id="generic-listings-scroll"
+                    className="overflow-x-auto pb-3 -mx-4 px-4"
+                    style={{
+                      scrollbarWidth: isMobile ? 'thin' : 'none',
+                      scrollbarColor: '#fb7678 #fef5f6',
+                      msOverflowStyle: isMobile ? 'auto' : 'none'
+                    }}
+                  >
+                    <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
+                      {visibleGenericList.map((listing) => (
+                        <div key={listing.id} className="flex-shrink-0" style={{ width: '400px', height: '400px' }}>
+                          <RecommendationCard2
+                            listing={listing}
+                            onClick={() => handleListingClick(listing)}
+                            isInWishlist={wishlistIds.has(listing.id)}
+                            onToggleWishlist={(e) => handleToggleWishlist(e, listing.id)}
+                            compact={true}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Load More Button */}
+                {visibleGenericListings < genericListings.length && (
+                  <div className="flex justify-center mt-4">
+                    <button
+                      onClick={handleLoadMore}
+                      className="px-6 py-3 text-white font-semibold transition-all duration-300"
+                      style={{
+                        backgroundColor: '#fb7678',
+                        borderRadius: '30px',
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: '14px',
+                        boxShadow: '0 2px 8px rgba(251, 118, 120, 0.3)'
+                      }}
+                    >
+                      Load More ({genericListings.length - visibleGenericListings} more)
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Empty State */}
+            {listings.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <svg
+                  className="w-24 h-24 mb-4"
+                  style={{ color: '#ababab' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <h3 className="text-lg font-bold mb-2" style={{
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#3e2d2e'
+                }}>
+                  No sitters found
+                </h3>
+                <p className="text-sm mb-6" style={{
+                  fontFamily: "'Inter', sans-serif",
+                  color: '#6d6d6d'
+                }}>
+                  Try adjusting your search or filters
+                </p>
+                <button
+                  onClick={handleClearFilters}
+                  className="px-6 py-3 text-white font-semibold transition-all duration-300"
+                  style={{
+                    backgroundColor: '#fb7678',
+                    borderRadius: '30px',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '14px'
+                  }}
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -510,6 +852,7 @@ const Explore = () => {
         onClose={handleCloseProfileModal}
       />
     </div>
+    </>
   );
 };
 

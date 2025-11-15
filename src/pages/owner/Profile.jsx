@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import LoginRegisterTabs from '@/components/common/LoginRegisterTabs';
 import profileService from '@/services/profileService';
+import LocationAutocomplete from '@/components/common/LocationAutocomplete';
 
 const Profile = () => {
   const { profile, becomeSitter, switchRole, logout, isAuthenticated, user, updateUserProfile } = useAuthStore();
@@ -26,6 +27,8 @@ const Profile = () => {
     name: '',
     bio: '',
     location: '',
+    latitude: null,
+    longitude: null,
   });
   const [profileStats, setProfileStats] = useState(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -76,6 +79,8 @@ const Profile = () => {
         name: profile.name || '',
         bio: profile.bio || '',
         location: profile.location || '',
+        latitude: profile.latitude || null,
+        longitude: profile.longitude || null,
       });
       setIsEditingProfile(false);
     }
@@ -195,6 +200,8 @@ const Profile = () => {
         name: profileForm.name.trim(),
         bio: profileForm.bio.trim() || null,
         location: profileForm.location.trim() || null,
+        latitude: profileForm.latitude,
+        longitude: profileForm.longitude,
       });
 
       if (result.success) {
@@ -220,6 +227,8 @@ const Profile = () => {
       name: profile?.name || '',
       bio: profile?.bio || '',
       location: profile?.location || '',
+      latitude: profile?.latitude || null,
+      longitude: profile?.longitude || null,
     });
     setIsEditingProfile(false);
   };
@@ -631,13 +640,18 @@ const Profile = () => {
                 <div>
                   <label className="block text-sm font-medium text-[#6d6d6d] mb-2">Location</label>
                   {isEditingProfile ? (
-                    <input
-                      type="text"
-                      name="location"
+                    <LocationAutocomplete
                       value={profileForm.location}
-                      onChange={handleProfileFormChange}
+                      onChange={(locationData) => {
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          location: locationData.address,
+                          latitude: locationData.lat,
+                          longitude: locationData.lng,
+                        }));
+                      }}
+                      placeholder="e.g., Orchard Road, Singapore"
                       className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678] focus:border-transparent"
-                      placeholder="e.g., Singapore, New York"
                     />
                   ) : (
                     <p className="font-medium text-[#3e2d2e] px-4 py-2 bg-gray-50 rounded-lg">

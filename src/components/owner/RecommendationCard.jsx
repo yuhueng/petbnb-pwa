@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { supabase } from '@/services/supabase';
+import { useAuthStore } from '@/store/authStore';
+import { calculateDistance, formatDistance } from '@/utils/distanceMatrix';
 
 
 /**
@@ -10,6 +12,7 @@ import { supabase } from '@/services/supabase';
  * Now using Tailwind CSS with horizontal layout
  */
 const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWishlist, compact = false }) => {
+  const { profile } = useAuthStore();
   const {
     title,
     description,
@@ -24,6 +27,8 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
     image_urls,
     profiles,
     sitter_id,
+    latitude,
+    longitude,
   } = listing;
 
 
@@ -32,6 +37,9 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
     reviewCount: 0,
     loading: true,
   });
+
+  const [distance, setDistance] = useState(null);
+  const [loadingDistance, setLoadingDistance] = useState(false);
 
 
   // Fetch review statistics for this sitter
@@ -80,13 +88,48 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
     fetchReviewStats();
   }, [sitter_id, profiles?.id]);
 
+  // Calculate distance from owner's location to listing location
+  useEffect(() => {
+    const fetchDistance = async () => {
+      // Only calculate if both owner and listing have location coordinates
+      const ownerLat = profile?.latitude;
+      const ownerLng = profile?.longitude;
+
+      if (!ownerLat || !ownerLng || !latitude || !longitude) {
+        setDistance(null);
+        return;
+      }
+
+      setLoadingDistance(true);
+      try {
+        const result = await calculateDistance(
+          { lat: ownerLat, lng: ownerLng },
+          { lat: latitude, lng: longitude }
+        );
+
+        if (result) {
+          setDistance(result.distance); // distance in meters
+        } else {
+          setDistance(null);
+        }
+      } catch (error) {
+        console.error('Error calculating distance:', error);
+        setDistance(null);
+      } finally {
+        setLoadingDistance(false);
+      }
+    };
+
+    fetchDistance();
+  }, [profile, latitude, longitude]);
+
 
   // Get sitter name
   const sitterName = profiles?.name || 'Pet Sitter';
 
 
-  // Get location display
-  const location = city && state ? `${city}, ${state}` : profiles?.location || city || 'Location not specified';
+  // Get location display - use address from listing, or profile location as fallback
+  const location = listing.address || profiles?.location || 'Location not specified';
 
 
   // Get profile image
@@ -218,7 +261,7 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
             </div>
           </div>
           
-          <p className="text-sm text-[#909090] mb-2">
+          <p className="text-sm text-[#909090] mb-2 truncate">
             {location}
           </p>
 
@@ -244,17 +287,19 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
             </span>
           </div>
           
-          {/* Distance */}
-          <div className="flex items-center gap-0.5 w-[120px] h-[30px]">
-            <img 
-              src="/icons/common/distance-icon.svg" 
-              alt="Location" 
-              className="w-7 h-7"
-            />
-            <span className="font-bold text-[#fb7678] text-[12px] whitespace-nowrap overflow-hidden">
-              2.5km Away
-            </span>
-          </div>
+          {/* Distance - Only show if we have distance data */}
+          {distance !== null && (
+            <div className="flex items-center gap-0.5 w-[120px] h-[30px]">
+              <img
+                src="/icons/common/distance-icon.svg"
+                alt="Location"
+                className="w-7 h-7"
+              />
+              <span className="font-bold text-[#fb7678] text-[12px] whitespace-nowrap overflow-hidden">
+                {formatDistance(distance)} Away
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </article>

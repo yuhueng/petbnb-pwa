@@ -23,6 +23,10 @@ CREATE TABLE profiles (
 );
 
 CREATE INDEX idx_profiles_last_role ON profiles(last_role);
+
+ALTER TABLE profiles
+ADD COLUMN latitude DECIMAL(10, 8),
+ADD COLUMN longitude DECIMAL(11, 8);
 -- ============================================
   -- PROFILE AVATARS BUCKET
   -- ============================================

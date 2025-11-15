@@ -6,6 +6,7 @@ import ImageGallery from '@/components/common/ImageGallery';
 import RatingDisplay from '@/components/common/RatingDisplay';
 import ReviewsModal from '@/components/common/ReviewsModal';
 import reviewService from '@/services/reviewService';
+import LocationAutocomplete from '@/components/common/LocationAutocomplete';
 
 const Listing = () => {
   const navigate = useNavigate();
@@ -41,9 +42,8 @@ const Listing = () => {
     price_per_day: '',
     price_per_hour: '',
     address: '',
-    city: '',
-    state: '',
-    postal_code: '',
+    latitude: null,
+    longitude: null,
     amenities: [],
     house_rules: '',
     cancellation_policy: '',
@@ -372,9 +372,8 @@ const Listing = () => {
       price_per_day: listing.price_per_day ? (listing.price_per_day / 100).toFixed(2) : '',
       price_per_hour: listing.price_per_hour ? (listing.price_per_hour / 100).toFixed(2) : '',
       address: listing.address || '',
-      city: listing.city || '',
-      state: listing.state || '',
-      postal_code: listing.postal_code || '',
+      latitude: listing.latitude || null,
+      longitude: listing.longitude || null,
       amenities: listing.amenities || [],
       house_rules: listing.house_rules || '',
       cancellation_policy: listing.cancellation_policy || '',
@@ -434,9 +433,8 @@ const Listing = () => {
       price_per_day: '',
       price_per_hour: '',
       address: '',
-      city: '',
-      state: '',
-      postal_code: '',
+      latitude: null,
+      longitude: null,
       amenities: [],
       house_rules: '',
       cancellation_policy: '',
@@ -836,50 +834,26 @@ const Listing = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Street Address</label>
-              <input
-                type="text"
-                name="address"
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Address in Singapore
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <LocationAutocomplete
                 value={formData.address}
-                onChange={handleInputChange}
+                onChange={(locationData) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    address: locationData.address,
+                    latitude: locationData.lat,
+                    longitude: locationData.lng,
+                  }));
+                }}
+                placeholder="e.g., Orchard Road, Singapore"
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
-                placeholder="123 Main Street"
               />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
-                  placeholder="New York"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">State</label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
-                  placeholder="NY"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Postal Code</label>
-                <input
-                  type="text"
-                  name="postal_code"
-                  value={formData.postal_code}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#fb7678] focus:border-[#fb7678] transition-colors"
-                  placeholder="10001"
-                />
-              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Start typing to search for your location in Singapore
+              </p>
             </div>
           </div>
 
@@ -1071,9 +1045,7 @@ const Listing = () => {
                 <div className="grid grid-cols-1 gap-[16px]">
               {myListings.map((listing) => {
                 // Get location for display
-                const location = listing.city && listing.state
-                  ? `${listing.city}, ${listing.state}`
-                  : 'Location not set';
+                const location = listing.address || 'Location not set';
 
                 // Get primary service
                 const primaryService = listing.service_type?.[0]?.replace(/_/g, ' ') || 'Pet Care';

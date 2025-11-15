@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { supabase } from '@/services/supabase';
+import { useAuthStore } from '@/store/authStore';
+import { calculateDistance, formatDistance } from '@/utils/distanceMatrix';
 
 
 /**
@@ -10,6 +12,7 @@ import { supabase } from '@/services/supabase';
  * Now using Tailwind CSS with horizontal layout
  */
 const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleWishlist, compact = false }) => {
+  const { profile } = useAuthStore();
   const {
     title,
     description,
@@ -24,6 +27,8 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
     image_urls,
     profiles,
     sitter_id,
+    latitude,
+    longitude,
   } = listing;
 
 
@@ -32,6 +37,9 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
     reviewCount: 0,
     loading: true,
   });
+
+  const [distance, setDistance] = useState(null);
+  const [loadingDistance, setLoadingDistance] = useState(false);
 
 
   // Fetch review statistics for this sitter
@@ -81,13 +89,48 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
     fetchReviewStats();
   }, [sitter_id, profiles?.id]);
 
+  // Calculate distance from owner's location to listing location
+  useEffect(() => {
+    const fetchDistance = async () => {
+      // Only calculate if both owner and listing have location coordinates
+      const ownerLat = profile?.latitude;
+      const ownerLng = profile?.longitude;
+
+      if (!ownerLat || !ownerLng || !latitude || !longitude) {
+        setDistance(null);
+        return;
+      }
+
+      setLoadingDistance(true);
+      try {
+        const result = await calculateDistance(
+          { lat: ownerLat, lng: ownerLng },
+          { lat: latitude, lng: longitude }
+        );
+
+        if (result) {
+          setDistance(result.distance); // distance in meters
+        } else {
+          setDistance(null);
+        }
+      } catch (error) {
+        console.error('Error calculating distance:', error);
+        setDistance(null);
+      } finally {
+        setLoadingDistance(false);
+      }
+    };
+
+    fetchDistance();
+  }, [profile, latitude, longitude]);
+
 
   // Get sitter name
   const sitterName = profiles?.name || 'Pet Sitter';
 
 
-  // Get location display
-  const location = city && state ? `${city}, ${state}` : profiles?.location || city || 'Location not specified';
+  // Get location display - use address from listing, or profile location as fallback
+  const location = listing.address || profiles?.location || 'Location not specified';
 
 
   // Get profile image
@@ -241,17 +284,19 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
               </span>
             </div>
 
-            {/* Distance */}
-            <div className="flex items-center gap-1 flex-1 min-w-0">
-              <img
-                src="/icons/common/distance-icon.svg"
-                alt="Distance"
-                className="w-5 h-5 flex-shrink-0"
-              />
-              <span className="font-bold text-[#fb7678] text-xs truncate">
-                2.5km Away
-              </span>
-            </div>
+            {/* Distance - Only show if we have distance data */}
+            {distance !== null && (
+              <div className="flex items-center gap-1 flex-1 min-w-0">
+                <img
+                  src="/icons/common/distance-icon.svg"
+                  alt="Distance"
+                  className="w-5 h-5 flex-shrink-0"
+                />
+                <span className="font-bold text-[#fb7678] text-xs truncate">
+                  {formatDistance(distance)} Away
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

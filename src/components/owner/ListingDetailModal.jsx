@@ -140,6 +140,8 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
     state,
     address,
     postal_code,
+    latitude,
+    longitude,
     amenities,
     house_rules,
     cancellation_policy,
@@ -151,7 +153,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
   const sitterName = profiles?.name || 'Unknown Sitter';
   const sitterAvatar = profiles?.avatar_url;
   const sitterBio = profiles?.bio;
-  const sitterLocation = profiles?.location || (city && state ? `${city}, ${state}` : 'Location not specified');
+  const sitterLocation = address || profiles?.location || 'Location not specified';
 
   // Handle close with animation
   const handleClose = () => {
@@ -474,12 +476,44 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
             )}
           </div>
 
-          {/* 5. Map Section (Placeholder) */}
-          <div className="h-[250px] border-b border-[#e9e9e9] bg-gray-100 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-4xl mb-2">📍</div>
-              <p className="text-sm text-gray-600 font-medium">{sitterLocation}</p>
-              <p className="text-xs text-gray-500 mt-1">Map integration coming soon</p>
+          {/* 5. Map Section */}
+          <div className="p-5 border-b border-[#e9e9e9]">
+            <h3 className="text-lg font-semibold text-[#1d1a20] mb-3">Location</h3>
+            <p className="text-sm opacity-90 mb-2">Address: {sitterLocation}</p>
+            <div className="h-[250px] border-b border-[#e9e9e9] bg-gray-100">
+              {latitude && longitude ? (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  style={{ border: 0 }}
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${latitude},${longitude}&region=sg&zoom=15`}
+                  allowFullScreen
+                  loading="lazy"
+                  title="Listing Location Map"
+                />
+              ) : address ? (
+                <iframe
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  style={{ border: 0 }}
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(address)}&region=sg&zoom=15`}
+                  allowFullScreen
+                  loading="lazy"
+                  title="Listing Location Map"
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">📍</div>
+                    <p className="text-sm text-gray-600 font-medium">{sitterLocation}</p>
+                    <p className="text-xs text-gray-500 mt-1">Location not available</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

@@ -241,6 +241,12 @@ const Listing = () => {
       return;
     }
 
+    // Validate address is provided
+    if (!formData.address || !formData.address.trim()) {
+      alert('Please select a location in Singapore');
+      return;
+    }
+
     // Validate pricing based on selected pricing type
     if (pricingType === 'per_day' && !formData.price_per_day) {
       alert('Please enter a price per day');

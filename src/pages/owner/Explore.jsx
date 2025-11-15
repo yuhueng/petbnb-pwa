@@ -5,7 +5,6 @@ import { usePetStore } from '@/store/petStore';
 import RecommendationCard from '@/components/owner/RecommendationCard';
 import ListingDetailModal from '@/components/owner/ListingDetailModal';
 import ProfileModal from '@/components/common/ProfileModal';
-import { parseSearchQuery, convertToListingFilters } from '@/services/aiSearchService';
 import { wishlistService } from '@/services/wishlistService';
 import toast from 'react-hot-toast';
 import RecommendationCard2 from '../../components/owner/RecommendationCard2';
@@ -26,12 +25,9 @@ const Explore = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [filterMode, setFilterMode] = useState('quick'); // 'quick' or 'byPet'
+  const [showSearchModal, setShowSearchModal] = useState(false); // Search popup modal
   const [selectedListing, setSelectedListing] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [aiSearching, setAiSearching] = useState(false);
-  const [aiUnderstanding, setAiUnderstanding] = useState(null);
-  const [aiParsedCriteria, setAiParsedCriteria] = useState(null);
   const [wishlistIds, setWishlistIds] = useState(new Set());
   const [profileUserId, setProfileUserId] = useState(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -75,38 +71,9 @@ const Explore = () => {
   };
 
   // Handle AI-powered search
-  const handleSearch = async (e) => {
-    e.preventDefault();
-
-    if (!searchTerm.trim()) {
-      const resetFilters = user ? { excludeUserId: user.id } : {};
-      fetchListings(resetFilters);
-      setAiUnderstanding(null);
-      setAiParsedCriteria(null);
-      return;
-    }
-
-    try {
-      setAiSearching(true);
-      setAiUnderstanding(null);
-      setAiParsedCriteria(null);
-
-      const aiCriteria = await parseSearchQuery(searchTerm);
-      setAiUnderstanding(aiCriteria.understanding || 'Processing your search...');
-      setAiParsedCriteria(aiCriteria);
-
-      const searchFilters = convertToListingFilters(aiCriteria);
-      if (user) {
-        searchFilters.excludeUserId = user.id;
-      }
-
-      fetchListings(searchFilters);
-    } catch (error) {
-      console.error('AI Search Error:', error);
-      setAiUnderstanding('Sorry, there was an error processing your search. Please try again.');
-    } finally {
-      setAiSearching(false);
-    }
+  // Handle search - now opens the search modal with pet filters
+  const handleSearchClick = () => {
+    setShowSearchModal(true);
   };
 
   // Toggle filter handlers
@@ -172,6 +139,19 @@ const Explore = () => {
   const getFilteredListings = (listingsToFilter) => {
     let filtered = [...listingsToFilter];
 
+    // Date range filter - check if listing is available during the requested dates
+    if (filters.dateRange.start && filters.dateRange.end) {
+      const requestStart = new Date(filters.dateRange.start);
+      const requestEnd = new Date(filters.dateRange.end);
+
+      filtered = filtered.filter(listing => {
+        // If listing has availability data, check against it
+        // For now, we'll include all listings as we don't have availability tracking yet
+        // TODO: Implement proper availability checking once availability table is set up
+        return true;
+      });
+    }
+
     // Price range filter
     if (filters.priceRange.min || filters.priceRange.max) {
       filtered = filtered.filter(listing => {
@@ -216,7 +196,7 @@ const Explore = () => {
     }
 
     // Selected pets filter (filter by specific pet needs)
-    if (filterMode === 'byPet' && filters.selectedPets.length > 0) {
+    if (filters.selectedPets.length > 0) {
       const selectedPetObjects = pets.filter(pet => filters.selectedPets.includes(pet.id));
       const requiredSpecies = [...new Set(selectedPetObjects.map(p => p.species))];
 
@@ -376,10 +356,13 @@ const Explore = () => {
         <div className="bg-white w-full shadow-md">
           <div className={`w-full px-4 py-4 mx-auto ${isMobile ? '' : 'max-w-[1200px]'}`}>
             {/* Search Bar with Filter Icon */}
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <div className="flex-1 relative">
+            <div className="flex gap-2">
+              <div
+                className="flex-1 relative cursor-pointer"
+                onClick={handleSearchClick}
+              >
                 <svg
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#909090]"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#909090] pointer-events-none"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -394,490 +377,12 @@ const Explore = () => {
                 <input
                   type="text"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search house sitters..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-[24px] bg-white text-sm font-['Inter'] focus:outline-none focus:border-[#fb7678] disabled:opacity-50"
-                  disabled={aiSearching}
+                  readOnly
+                  placeholder="Search..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-[24px] bg-white text-sm font-['Inter'] focus:outline-none focus:border-[#fb7678] cursor-pointer"
                 />
               </div>
-              <button
-                type="submit"
-                disabled={aiSearching}
-                className={`px-4 py-3 bg-[#fb7678] text-white font-semibold rounded-[24px] text-sm font-['Inter'] transition-all duration-300 ${aiSearching ? 'opacity-50' : ''}`}
-              >
-                {aiSearching ? (
-                  <svg
-                    className="animate-spin h-5 w-5"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                ) : (
-                  'Search'
-                )}
-              </button>
-              {/* Filter Icon Button */}
-              <button
-                type="button"
-                onClick={() => setShowFilters(!showFilters)}
-                className="px-3 py-3 bg-white border border-[#e5e5e5] rounded-[24px] transition-all duration-300 hover:bg-gray-50"
-                title="Filter"
-              >
-                <svg
-                  className="w-5 h-5 text-[#6d6d6d]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                  />
-                </svg>
-              </button>
-            </form>
-
-            {/* AI Understanding Display */}
-            {aiUnderstanding && (
-              <div className="mt-3 p-3 bg-[rgba(251,118,120,0.1)] border border-[#fb7678] rounded-[10px]">
-                <div className="flex items-start gap-2">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#3e2d2e] font-['Inter']">
-                      {aiUnderstanding}
-                    </p>
-                    {aiParsedCriteria && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {aiParsedCriteria.city && (
-                          <span className="text-xs px-2 py-1 bg-[#fcf3f3] text-[#fb7678] rounded-[12px] font-['Inter'] font-semibold">
-                            📍 {aiParsedCriteria.city}
-                          </span>
-                        )}
-                        {aiParsedCriteria.service_type && (
-                          <span className="text-xs px-2 py-1 bg-[#fcf3f3] text-[#fb7678] rounded-[12px] font-['Inter'] font-semibold">
-                            🏠 {aiParsedCriteria.service_type}
-                          </span>
-                        )}
-                        {aiParsedCriteria.accepted_pet_types && (
-                          <span className="text-xs px-2 py-1 bg-[#fcf3f3] text-[#fb7678] rounded-[12px] font-['Inter'] font-semibold">
-                            🐾 {aiParsedCriteria.accepted_pet_types}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => {
-                      setAiUnderstanding(null);
-                      setAiParsedCriteria(null);
-                    }}
-                    className="text-[#fb7678] hover:text-[#fa5d5f]"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Enhanced Filters Panel */}
-            {showFilters && (
-              <div className="mt-3 p-4 bg-white rounded-[10px] shadow-lg border border-[#e5e5e5]">
-                {/* Filter Mode Toggle */}
-                <div className="flex gap-2 mb-4">
-                  <button
-                    onClick={() => setFilterMode('quick')}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold font-['Inter'] transition-all duration-200 ${
-                      filterMode === 'quick'
-                        ? 'bg-[#fb7678] text-white'
-                        : 'bg-[#f5f5f5] text-[#737373] hover:bg-gray-300'
-                    }`}
-                  >
-                    Quick Filters
-                  </button>
-                  <button
-                    onClick={() => setFilterMode('byPet')}
-                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold font-['Inter'] transition-all duration-200 ${
-                      filterMode === 'byPet'
-                        ? 'bg-[#fb7678] text-white'
-                        : 'bg-[#f5f5f5] text-[#737373] hover:bg-gray-300'
-                    }`}
-                  >
-                    Filter by Pet
-                  </button>
-                </div>
-
-                {/* Quick Filters Mode */}
-                {filterMode === 'quick' && (
-                  <div className="space-y-4">
-                    {/* Date Range Filter */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#3e2d2e] font-['Inter'] mb-2">
-                        Date Range
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs text-[#6d6d6d] font-['Inter'] mb-1">
-                            Check-in
-                          </label>
-                          <input
-                            type="date"
-                            value={filters.dateRange.start}
-                            min={new Date().toISOString().split('T')[0]}
-                            onChange={(e) => setFilters(prev => ({
-                              ...prev,
-                              dateRange: { ...prev.dateRange, start: e.target.value }
-                            }))}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg font-['Inter'] text-sm focus:outline-none focus:border-[#fb7678]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-[#6d6d6d] font-['Inter'] mb-1">
-                            Check-out
-                          </label>
-                          <input
-                            type="date"
-                            value={filters.dateRange.end}
-                            min={filters.dateRange.start || new Date().toISOString().split('T')[0]}
-                            onChange={(e) => setFilters(prev => ({
-                              ...prev,
-                              dateRange: { ...prev.dateRange, end: e.target.value }
-                            }))}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg font-['Inter'] text-sm focus:outline-none focus:border-[#fb7678]"
-                          />
-                        </div>
-                      </div>
-                      {filters.dateRange.start && filters.dateRange.end && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-[#6d6d6d] font-['Inter']">
-                          <svg className="w-4 h-4 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span>
-                            {Math.ceil((new Date(filters.dateRange.end) - new Date(filters.dateRange.start)) / (1000 * 60 * 60 * 24))} night(s)
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Price Range Filter */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#3e2d2e] font-['Inter'] mb-2">
-                        Price Range
-                      </label>
-                      <div className="flex gap-2 mb-2">
-                        <button
-                          onClick={() => setFilters(prev => ({ ...prev, priceRange: { ...prev.priceRange, type: 'day' } }))}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-['Inter'] transition-all duration-200 ${
-                            filters.priceRange.type === 'day'
-                              ? 'bg-[#fb7678] text-white'
-                              : 'bg-[#f5f5f5] text-[#737373]'
-                          }`}
-                        >
-                          Per Day
-                        </button>
-                        <button
-                          onClick={() => setFilters(prev => ({ ...prev, priceRange: { ...prev.priceRange, type: 'hour' } }))}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-['Inter'] transition-all duration-200 ${
-                            filters.priceRange.type === 'hour'
-                              ? 'bg-[#fb7678] text-white'
-                              : 'bg-[#f5f5f5] text-[#737373]'
-                          }`}
-                        >
-                          Per Hour
-                        </button>
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          placeholder="Min"
-                          value={filters.priceRange.min}
-                          onChange={(e) => setFilters(prev => ({
-                            ...prev,
-                            priceRange: { ...prev.priceRange, min: e.target.value }
-                          }))}
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-['Inter'] text-sm focus:outline-none focus:border-[#fb7678]"
-                        />
-                        <span className="flex items-center text-[#909090]">-</span>
-                        <input
-                          type="number"
-                          placeholder="Max"
-                          value={filters.priceRange.max}
-                          onChange={(e) => setFilters(prev => ({
-                            ...prev,
-                            priceRange: { ...prev.priceRange, max: e.target.value }
-                          }))}
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-['Inter'] text-sm focus:outline-none focus:border-[#fb7678]"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Minimum Rating Filter */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#3e2d2e] font-['Inter'] mb-2">
-                        Minimum Rating
-                      </label>
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map(rating => (
-                          <button
-                            key={rating}
-                            onClick={() => setFilters(prev => ({
-                              ...prev,
-                              minRating: prev.minRating === rating ? 0 : rating
-                            }))}
-                            className={`flex-1 py-2 rounded-lg text-sm font-semibold font-['Inter'] transition-all duration-200 ${
-                              filters.minRating >= rating
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-[#f5f5f5] text-[#909090]'
-                            }`}
-                          >
-                            {rating}★
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Pet Types Filter */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#3e2d2e] font-['Inter'] mb-2">
-                        Pet Types
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {['dog', 'cat', 'bird', 'rabbit', 'hamster', 'other'].map(petType => (
-                          <button
-                            key={petType}
-                            onClick={() => togglePetType(petType)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold font-['Inter'] transition-all duration-200 ${
-                              filters.petTypes.includes(petType)
-                                ? 'bg-[#fb7678] text-white'
-                                : 'bg-[#f5f5f5] text-[#737373] hover:bg-gray-300'
-                            }`}
-                          >
-                            {petType.charAt(0).toUpperCase() + petType.slice(1)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Services Filter */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#3e2d2e] font-['Inter'] mb-2">
-                        Services
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {['boarding', 'daycare', 'walking', 'grooming'].map(service => (
-                          <button
-                            key={service}
-                            onClick={() => toggleService(service)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold font-['Inter'] transition-all duration-200 ${
-                              filters.services.includes(service)
-                                ? 'bg-[#fb7678] text-white'
-                                : 'bg-[#f5f5f5] text-[#737373] hover:bg-gray-300'
-                            }`}
-                          >
-                            {service.charAt(0).toUpperCase() + service.slice(1)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Amenities Filter */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#3e2d2e] font-['Inter'] mb-2">
-                        Amenities
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {['fenced_yard', 'air_conditioning', 'pet_camera', 'first_aid_trained', 'pool_access'].map(amenity => (
-                          <button
-                            key={amenity}
-                            onClick={() => toggleAmenity(amenity)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold font-['Inter'] transition-all duration-200 ${
-                              filters.amenities.includes(amenity)
-                                ? 'bg-[#fb7678] text-white'
-                                : 'bg-[#f5f5f5] text-[#737373] hover:bg-gray-300'
-                            }`}
-                          >
-                            {amenity.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Filter by Pet Mode */}
-                {filterMode === 'byPet' && (
-                  <div className="space-y-3">
-                    {/* Date Range Filter (shared across modes) */}
-                    <div>
-                      <label className="block text-sm font-semibold text-[#3e2d2e] font-['Inter'] mb-2">
-                        Date Range
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs text-[#6d6d6d] font-['Inter'] mb-1">
-                            Check-in
-                          </label>
-                          <input
-                            type="date"
-                            value={filters.dateRange.start}
-                            min={new Date().toISOString().split('T')[0]}
-                            onChange={(e) => setFilters(prev => ({
-                              ...prev,
-                              dateRange: { ...prev.dateRange, start: e.target.value }
-                            }))}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg font-['Inter'] text-sm focus:outline-none focus:border-[#fb7678]"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-[#6d6d6d] font-['Inter'] mb-1">
-                            Check-out
-                          </label>
-                          <input
-                            type="date"
-                            value={filters.dateRange.end}
-                            min={filters.dateRange.start || new Date().toISOString().split('T')[0]}
-                            onChange={(e) => setFilters(prev => ({
-                              ...prev,
-                              dateRange: { ...prev.dateRange, end: e.target.value }
-                            }))}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg font-['Inter'] text-sm focus:outline-none focus:border-[#fb7678]"
-                          />
-                        </div>
-                      </div>
-                      {filters.dateRange.start && filters.dateRange.end && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-[#6d6d6d] font-['Inter']">
-                          <svg className="w-4 h-4 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span>
-                            {Math.ceil((new Date(filters.dateRange.end) - new Date(filters.dateRange.start)) / (1000 * 60 * 60 * 24))} night(s)
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {pets && pets.length > 0 ? (
-                      <>
-                        <p className="text-xs text-[#6d6d6d] font-['Inter'] mb-3">
-                          Select your pet(s) to find sitters that match their specific needs
-                        </p>
-                        {pets.map(pet => (
-                          <div
-                            key={pet.id}
-                            onClick={() => togglePetSelection(pet.id)}
-                            className={`p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
-                              filters.selectedPets.includes(pet.id)
-                                ? 'border-[#fb7678] bg-[#fef5f6]'
-                                : 'border-gray-200 hover:border-[#fb7678] hover:bg-[#fef5f6]'
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              {/* Checkbox */}
-                              <div className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-                                filters.selectedPets.includes(pet.id)
-                                  ? 'border-[#fb7678] bg-[#fb7678]'
-                                  : 'border-gray-300'
-                              }`}>
-                                {filters.selectedPets.includes(pet.id) && (
-                                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                              </div>
-
-                              {/* Pet Details */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h4 className="font-bold text-sm text-[#3e2d2e] font-['Inter']">
-                                    {pet.name}
-                                  </h4>
-                                  <span className="text-xs px-2 py-0.5 bg-[#fb7678] text-white rounded-full font-['Inter'] font-semibold">
-                                    {pet.species}
-                                  </span>
-                                </div>
-
-                                <div className="space-y-1 text-xs text-[#6d6d6d] font-['Inter']">
-                                  {pet.breed && (
-                                    <p><span className="font-semibold">Breed:</span> {pet.breed}</p>
-                                  )}
-                                  {pet.age && (
-                                    <p><span className="font-semibold">Age:</span> {pet.age} years</p>
-                                  )}
-                                  {pet.temperament && (
-                                    <p><span className="font-semibold">Temperament:</span> {pet.temperament}</p>
-                                  )}
-                                  {pet.medical_conditions && (
-                                    <p className="text-[#fb7678]">
-                                      <span className="font-semibold">Medical:</span> {pet.medical_conditions}
-                                    </p>
-                                  )}
-                                  {pet.allergies && (
-                                    <p className="text-[#fb7678]">
-                                      <span className="font-semibold">Allergies:</span> {pet.allergies}
-                                    </p>
-                                  )}
-                                  {pet.special_needs && (
-                                    <p className="text-[#fb7678]">
-                                      <span className="font-semibold">Special Needs:</span> {pet.special_needs}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </>
-                    ) : (
-                      <div className="text-center py-6">
-                        <p className="text-sm text-[#6d6d6d] font-['Inter'] mb-3">
-                          No pets added yet
-                        </p>
-                        <p className="text-xs text-[#909090] font-['Inter']">
-                          Add pets to your profile to use this filter
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={handleApplyFilters}
-                    className="flex-1 px-4 py-2.5 bg-[#fb7678] text-white font-semibold rounded-full text-sm font-['Inter'] transition-all duration-300 hover:bg-[#fa5d5f] shadow-sm"
-                  >
-                    Apply Filters
-                  </button>
-                  <button
-                    onClick={handleClearFilters}
-                    className="px-4 py-2.5 bg-[#f5f5f5] text-[#737373] font-semibold rounded-full text-sm font-['Inter'] transition-all duration-300 hover:bg-gray-300"
-                  >
-                    Clear All
-                  </button>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         </div>
 
@@ -968,7 +473,7 @@ const Explore = () => {
                       >
                         <div className="flex gap-3" style={{ minWidth: 'min-content' }}>
                           {recommendations.map((listing) => (
-                            <div key={listing.id} className="flex-shrink-0 w-[360px] h-[150px]">
+                            <div key={listing.id} className="flex-shrink-0 w-[360px] h-[180px]">
                               <RecommendationCard
                                 listing={listing}
                                 onClick={() => handleListingClick(listing)}
@@ -1102,6 +607,313 @@ const Explore = () => {
           isOpen={isProfileModalOpen}
           onClose={handleCloseProfileModal}
         />
+
+        {/* Search by Pet Modal */}
+        {showSearchModal && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 backdrop-blur-md bg-opacity-50"
+              onClick={() => setShowSearchModal(false)}
+            />
+
+            {/* Modal Content - Bottom Sheet on Mobile, Centered on Desktop */}
+            <div className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-xl max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-5 py-4 rounded-t-3xl sm:rounded-t-3xl z-10">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-[#3e2d2e] font-['Inter']">
+                    Search by Filter
+                  </h2>
+                  <button
+                    onClick={() => setShowSearchModal(false)}
+                    className="text-[#6d6d6d] hover:text-[#fb7678] transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 space-y-5">
+                {/* Pet Selection */}
+                <div>
+                  <label className="block text-base font-bold text-[#3e2d2e] font-['Inter'] mb-1">
+                    Select Your Pets
+                  </label>
+                  <p className="text-xs text-[#6d6d6d] font-['Inter'] mb-3">
+                    Choose which pets need a sitter
+                  </p>
+
+                  {pets && pets.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {pets.map(pet => {
+                        const getPetImage = (species) => {
+                          const speciesLower = species?.toLowerCase() || 'dog';
+                          const imageMap = {
+                            'dog': '/images/pet-boarding-dog-image.jpg',
+                            'cat': '/images/pet-boarding-cat-image.jpg',
+                            'bird': '/images/pet-boarding-bird-image.jpg',
+                            'rabbit': '/images/pet-boarding-rabbit-image.jpg',
+                            'hamster': '/images/pet-boarding-hamster-image.jpg',
+                          };
+                          return imageMap[speciesLower] || imageMap['dog'];
+                        };
+
+                        return (
+                          <div
+                            key={pet.id}
+                            onClick={() => togglePetSelection(pet.id)}
+                            className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 ${
+                              filters.selectedPets.includes(pet.id)
+                                ? 'ring-2 ring-[#fb7678] shadow-lg'
+                                : 'ring-1 ring-gray-200 hover:ring-2 hover:ring-[#fb7678]'
+                            }`}
+                          >
+                            {/* Pet Image */}
+                            <div className="relative h-32 bg-gray-100">
+                              <img
+                                src={getPetImage(pet.species)}
+                                alt={pet.name}
+                                className="w-full h-full object-cover"
+                              />
+                              {/* Checkbox Overlay */}
+                              <div className="absolute top-2 right-2">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 ${
+                                  filters.selectedPets.includes(pet.id)
+                                    ? 'bg-[#fb7678] border-2 border-white shadow-md'
+                                    : 'bg-white border-2 border-gray-300'
+                                }`}>
+                                  {filters.selectedPets.includes(pet.id) && (
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Pet Info */}
+                            <div className={`p-3 ${
+                              filters.selectedPets.includes(pet.id) ? 'bg-[#fef5f6]' : 'bg-white'
+                            }`}>
+                              <h4 className="font-bold text-sm text-[#3e2d2e] font-['Inter'] truncate mb-0.5">
+                                {pet.name}
+                              </h4>
+                              <div className="flex items-center gap-1.5 mb-2">
+                                <span className="text-xs px-2 py-0.5 bg-[#fb7678] text-white rounded-full font-['Inter'] font-semibold">
+                                  {pet.species}
+                                </span>
+                                {pet.age && (
+                                  <span className="text-xs text-[#6d6d6d] font-['Inter']">
+                                    {pet.age}y
+                                  </span>
+                                )}
+                              </div>
+                              {pet.breed && (
+                                <p className="text-xs text-[#6d6d6d] font-['Inter'] truncate">
+                                  {pet.breed}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-gray-50 rounded-xl">
+                      <div className="text-4xl mb-2">🐾</div>
+                      <p className="text-sm text-[#6d6d6d] font-['Inter'] font-semibold mb-1">
+                        No pets added yet
+                      </p>
+                      <p className="text-xs text-[#909090] font-['Inter']">
+                        Add pets to your profile to use this filter
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Date Range Filter */}
+                <div>
+                  <label className="block text-base font-bold text-[#3e2d2e] font-['Inter'] mb-1">
+                    When do you need care?
+                  </label>
+                  <p className="text-xs text-[#6d6d6d] font-['Inter'] mb-3">
+                    Select check-in and check-out dates
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-[#6d6d6d] font-['Inter'] mb-1.5">
+                        Check-in
+                      </label>
+                      <input
+                        type="date"
+                        value={filters.dateRange.start}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setFilters(prev => ({
+                          ...prev,
+                          dateRange: { ...prev.dateRange, start: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl font-['Inter'] text-sm focus:outline-none focus:ring-2 focus:ring-[#fb7678] focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-[#6d6d6d] font-['Inter'] mb-1.5">
+                        Check-out
+                      </label>
+                      <input
+                        type="date"
+                        value={filters.dateRange.end}
+                        min={filters.dateRange.start || new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setFilters(prev => ({
+                          ...prev,
+                          dateRange: { ...prev.dateRange, end: e.target.value }
+                        }))}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl font-['Inter'] text-sm focus:outline-none focus:ring-2 focus:ring-[#fb7678] focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  {filters.dateRange.start && filters.dateRange.end && (
+                    <div className="mt-3 flex items-center justify-center gap-2 py-2 bg-[#fef5f6] rounded-lg">
+                      <svg className="w-4 h-4 text-[#fb7678]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm font-semibold text-[#fb7678] font-['Inter']">
+                        {Math.ceil((new Date(filters.dateRange.end) - new Date(filters.dateRange.start)) / (1000 * 60 * 60 * 24))} night(s)
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Price Range Filter */}
+                <div>
+                  <label className="block text-base font-bold text-[#3e2d2e] font-['Inter'] mb-1">
+                    Price Range
+                  </label>
+                  <p className="text-xs text-[#6d6d6d] font-['Inter'] mb-3">
+                    Set your budget
+                  </p>
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, priceRange: { ...prev.priceRange, type: 'day' } }))}
+                      className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold font-['Inter'] transition-all duration-200 ${
+                        filters.priceRange.type === 'day'
+                          ? 'bg-[#fb7678] text-white shadow-md'
+                          : 'bg-[#f5f5f5] text-[#737373] hover:bg-gray-300'
+                      }`}
+                    >
+                      Per Day
+                    </button>
+                    <button
+                      onClick={() => setFilters(prev => ({ ...prev, priceRange: { ...prev.priceRange, type: 'hour' } }))}
+                      className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-bold font-['Inter'] transition-all duration-200 ${
+                        filters.priceRange.type === 'hour'
+                          ? 'bg-[#fb7678] text-white shadow-md'
+                          : 'bg-[#f5f5f5] text-[#737373] hover:bg-gray-300'
+                      }`}
+                    >
+                      Per Hour
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      placeholder="Min $"
+                      value={filters.priceRange.min}
+                      onChange={(e) => setFilters(prev => ({
+                        ...prev,
+                        priceRange: { ...prev.priceRange, min: e.target.value }
+                      }))}
+                      className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-['Inter'] text-sm focus:outline-none focus:ring-2 focus:ring-[#fb7678] focus:border-transparent"
+                    />
+                    <span className="text-[#909090] font-bold">—</span>
+                    <input
+                      type="number"
+                      placeholder="Max $"
+                      value={filters.priceRange.max}
+                      onChange={(e) => setFilters(prev => ({
+                        ...prev,
+                        priceRange: { ...prev.priceRange, max: e.target.value }
+                      }))}
+                      className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl font-['Inter'] text-sm focus:outline-none focus:ring-2 focus:ring-[#fb7678] focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Services Filter */}
+                <div>
+                  <label className="block text-base font-bold text-[#3e2d2e] font-['Inter'] mb-1">
+                    Services Needed
+                  </label>
+                  <p className="text-xs text-[#6d6d6d] font-['Inter'] mb-3">
+                    What type of care do you need?
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {['boarding', 'daycare', 'drop_in', 'house_sitting', 'dog_walking'].map(service => (
+                      <button
+                        key={service}
+                        onClick={() => toggleService(service)}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-bold font-['Inter'] transition-all duration-200 ${
+                          filters.services.includes(service)
+                            ? 'bg-[#fb7678] text-white shadow-md'
+                            : 'bg-[#f5f5f5] text-[#737373] hover:bg-gray-300'
+                        }`}
+                      >
+                        {service.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Amenities Filter */}
+                <div>
+                  <label className="block text-base font-bold text-[#3e2d2e] font-['Inter'] mb-1">
+                    Preferred Amenities
+                  </label>
+                  <p className="text-xs text-[#6d6d6d] font-['Inter'] mb-3">
+                    Special features you'd like
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {['fenced_yard', 'air_conditioning', 'pool', 'pet_camera', 'first_aid_trained', 'non_smoking'].map(amenity => (
+                      <button
+                        key={amenity}
+                        onClick={() => toggleAmenity(amenity)}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-bold font-['Inter'] transition-all duration-200 ${
+                          filters.amenities.includes(amenity)
+                            ? 'bg-[#fb7678] text-white shadow-md'
+                            : 'bg-[#f5f5f5] text-[#737373] hover:bg-gray-300'
+                        }`}
+                      >
+                        {amenity.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="sticky bottom-0 -mx-5 -mb-5 p-5 bg-white border-t border-gray-200 flex gap-3">
+                  <button
+                    onClick={handleClearFilters}
+                    className="px-6 py-3.5 bg-white border-2 border-[#fb7678] text-[#fb7678] font-bold rounded-full text-sm font-['Inter'] transition-all duration-300 hover:bg-[#fef5f6]"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleApplyFilters();
+                      setShowSearchModal(false);
+                    }}
+                    className="flex-1 px-6 py-3.5 bg-[#fb7678] text-white font-bold rounded-full text-sm font-['Inter'] transition-all duration-300 hover:bg-[#fa5d5f] shadow-lg"
+                  >
+                    Show Results
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

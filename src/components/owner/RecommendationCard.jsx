@@ -270,6 +270,20 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
           <p className="text-sm leading-relaxed text-[#71727a] line-clamp-2 mb-2">
             {bio}
           </p>
+
+          {/* Pet Type Tags */}
+          {accepted_pet_types && accepted_pet_types.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {accepted_pet_types.map((petType) => (
+                <span
+                  key={petType}
+                  className="text-xs px-2 py-0.5 bg-[#fef5f6] text-[#fb7678] rounded-full font-['Inter'] font-semibold"
+                >
+                  {petType.charAt(0).toUpperCase() + petType.slice(1)}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
 

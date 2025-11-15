@@ -441,7 +441,47 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
             )}
           </div>
 
-          {/* 4. Amenities & Services Section */}
+          {/* 4. Accepted Pet Types Section */}
+          {accepted_pet_types && accepted_pet_types.length > 0 && (
+            <div className="p-5 border-b border-[#e9e9e9]">
+              <h3 className="text-lg font-semibold text-[#1d1a20] mb-3">Accepted Pet Types</h3>
+              <div className="flex flex-wrap gap-2">
+                {accepted_pet_types.map((petType) => (
+                  <span
+                    key={petType}
+                    className="inline-flex items-center px-4 py-2 bg-[#fef5f6] text-[#fb7678] rounded-full font-['Inter'] font-semibold text-sm"
+                  >
+                    <span className="mr-2 text-lg">
+                      {petType.toLowerCase() === 'dog' && '🐕'}
+                      {petType.toLowerCase() === 'cat' && '🐱'}
+                      {petType.toLowerCase() === 'bird' && '🐦'}
+                      {petType.toLowerCase() === 'rabbit' && '🐰'}
+                      {petType.toLowerCase() === 'hamster' && '🐹'}
+                      {!['dog', 'cat', 'bird', 'rabbit', 'hamster'].includes(petType.toLowerCase()) && '🐾'}
+                    </span>
+                    {petType.charAt(0).toUpperCase() + petType.slice(1)}
+                  </span>
+                ))}
+              </div>
+              {accepted_pet_sizes && accepted_pet_sizes.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm text-[#6f6f6f] mb-2">Accepted sizes:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {accepted_pet_sizes.map((size) => (
+                      <span
+                        key={size}
+                        className="px-3 py-1 bg-gray-100 text-[#494a50] rounded-lg font-['Inter'] text-xs font-semibold"
+                      >
+                        {size.charAt(0).toUpperCase() + size.slice(1)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 5. Amenities & Services Section */}
           <div className="p-5 border-b border-[#e9e9e9]">
             <h3 className="text-lg font-semibold text-[#1d1a20] mb-3">Services Offered</h3>
             <div className="grid grid-cols-3 gap-3">
@@ -476,7 +516,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
             )}
           </div>
 
-          {/* 5. Map Section */}
+          {/* 6. Map Section */}
           <div className="p-5 border-b border-[#e9e9e9]">
             <h3 className="text-lg font-semibold text-[#1d1a20] mb-3">Location</h3>
             <p className="text-sm opacity-90 mb-2">Address: {sitterLocation}</p>

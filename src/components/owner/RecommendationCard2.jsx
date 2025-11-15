@@ -266,9 +266,28 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
           </p>
 
           {/* Bio - Fixed 2 lines */}
-          <p className="text-xs leading-relaxed text-[#71727a] line-clamp-2 mb-3 flex-grow">
+          <p className="text-xs leading-relaxed text-[#71727a] line-clamp-2 mb-2 flex-grow">
             {bio}
           </p>
+
+          {/* Pet Type Tags */}
+          {accepted_pet_types && accepted_pet_types.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2 flex-shrink-0">
+              {accepted_pet_types.slice(0, 3).map((petType) => (
+                <span
+                  key={petType}
+                  className="text-[10px] px-1.5 py-0.5 bg-[#fef5f6] text-[#fb7678] rounded-full font-['Inter'] font-semibold"
+                >
+                  {petType.charAt(0).toUpperCase() + petType.slice(1)}
+                </span>
+              ))}
+              {accepted_pet_types.length > 3 && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-[#f5f5f5] text-[#6d6d6d] rounded-full font-['Inter'] font-semibold">
+                  +{accepted_pet_types.length - 3}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Price and Distance - Fixed at bottom */}
           <div className="flex justify-between items-center gap-2 mt-auto flex-shrink-0">

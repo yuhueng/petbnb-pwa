@@ -135,8 +135,25 @@ class BookingService {
       throw new Error(error.message);
     }
 
-    console.log('✅ Fetched', data.length, 'bookings for owner');
-    return data;
+    // Fetch pet details for each booking
+    const bookingsWithPets = await Promise.all(
+      data.map(async (booking) => {
+        if (booking.pet_ids && booking.pet_ids.length > 0) {
+          const { data: pets, error: petError } = await supabase
+            .from('pets')
+            .select('id, name, species, breed, avatar_url')
+            .in('id', booking.pet_ids);
+
+          if (!petError && pets) {
+            return { ...booking, pets };
+          }
+        }
+        return { ...booking, pets: [] };
+      })
+    );
+
+    console.log('✅ Fetched', bookingsWithPets.length, 'bookings for owner');
+    return bookingsWithPets;
   }
 
   /**
@@ -168,8 +185,25 @@ class BookingService {
       throw new Error(error.message);
     }
 
-    console.log('✅ Fetched', data.length, 'bookings for sitter');
-    return data;
+    // Fetch pet details for each booking
+    const bookingsWithPets = await Promise.all(
+      data.map(async (booking) => {
+        if (booking.pet_ids && booking.pet_ids.length > 0) {
+          const { data: pets, error: petError } = await supabase
+            .from('pets')
+            .select('id, name, species, breed, avatar_url')
+            .in('id', booking.pet_ids);
+
+          if (!petError && pets) {
+            return { ...booking, pets };
+          }
+        }
+        return { ...booking, pets: [] };
+      })
+    );
+
+    console.log('✅ Fetched', bookingsWithPets.length, 'bookings for sitter');
+    return bookingsWithPets;
   }
 
   /**

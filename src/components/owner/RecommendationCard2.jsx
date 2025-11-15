@@ -23,7 +23,7 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
     cover_image_url,
     image_urls,
     profiles,
-    user_id,
+    sitter_id,
   } = listing;
 
 
@@ -37,7 +37,10 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
   // Fetch review statistics for this sitter
   useEffect(() => {
     const fetchReviewStats = async () => {
-      if (!user_id) {
+      // Use sitter_id from listing, or fallback to profiles.id
+      const sitterUserId = sitter_id || profiles?.id;
+
+      if (!sitterUserId) {
         setReviewStats({ averageRating: 0, reviewCount: 0, loading: false });
         return;
       }
@@ -47,7 +50,7 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
         const { data, error } = await supabase
           .from('reviews')
           .select('rating')
-          .eq('sitter_id', user_id)
+          .eq('sitter_id', sitterUserId)
           .eq('is_visible', true);
 
 
@@ -65,6 +68,7 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
             loading: false,
           });
         } else {
+          // No reviews - show 0.0 instead of default 5.0
           setReviewStats({ averageRating: 0, reviewCount: 0, loading: false });
         }
       } catch (error) {
@@ -75,7 +79,7 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
 
 
     fetchReviewStats();
-  }, [user_id]);
+  }, [sitter_id, profiles?.id]);
 
 
   // Get sitter name
@@ -124,21 +128,20 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
       onClick={onClick}
       className={`
         bg-white rounded-2xl shadow-md hover:shadow-lg
-        p-2 flex gap-4
         cursor-pointer transition-all duration-300
         hover:-translate-y-0.5
-        ${compact ? 'w-full' : 'mx-4 my-3'}
+        ${compact ? 'w-full h-full' : 'mx-4 my-3'}
       `}
     >
-      {/* All Details */}
-      <div className="flex-1 flex flex-col justify-between min-w-0">
-        {/* Top Section: Profile Image */}
-        <div className="relative flex-shrink-0">
+      {/* Fixed Height Container */}
+      <div className="h-full flex flex-col">
+        {/* Top Section: Profile Image - Fixed Height */}
+        <div className="relative flex-shrink-0 h-[180px]">
           {hasImage ? (
             <img
               src={profileImage}
               alt={sitterName}
-              className=" h-50 rounded-2xl object-cover"
+              className="w-full h-full rounded-t-2xl object-cover"
               onError={(e) => {
                 e.target.classList.add('hidden');
                 e.target.nextElementSibling.classList.remove('hidden');
@@ -147,18 +150,17 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
           ) : null}
           <div
             className={`
-              w-24 h-24 rounded-2xl
+              w-full h-full rounded-t-2xl
               bg-gradient-to-br from-[#fb7678] to-[#ffa8aa]
               flex items-center justify-center
-              text-white font-bold text-2xl
+              text-white font-bold text-4xl
               ${hasImage ? 'hidden' : 'flex'}
             `}
           >
             {getInitials(sitterName)}
           </div>
 
-
-          {/* Top Section: Wishlist Heart Button */}
+          {/* Wishlist Heart Button */}
           {onToggleWishlist && (
             <button
               onClick={(e) => {
@@ -166,8 +168,8 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
                 onToggleWishlist(e);
               }}
               className="
-                absolute -top-1 -right-1
-                w-7 h-7 rounded-full bg-white
+                absolute top-2 right-2
+                w-8 h-8 rounded-full bg-white
                 border-0 shadow-md
                 flex items-center justify-center
                 cursor-pointer transition-all duration-200
@@ -194,61 +196,59 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
           )}
         </div>
 
-        {/* Bottom Section: Name, Location, and Rating */}
-        <div className='p-2'> 
-          <div className="flex justify-between items-start gap-2 mb-1">
-            <h3 className="font-bold text-lg leading-tight text-black">
+        {/* Content Section - Flex Grow with Fixed Height */}
+        <div className="flex-1 flex flex-col p-3 min-h-0">
+          {/* Name and Rating - Fixed Height */}
+          <div className="flex justify-between items-start gap-2 mb-2 flex-shrink-0">
+            <h3 className="font-bold text-base leading-tight text-black truncate">
               {sitterName}
             </h3>
-            
-            {/* Rating Badge - Top Right */}
+
+            {/* Rating Badge */}
             <div className="flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded-lg flex-shrink-0">
-            <img 
-              src="/icons/common/star-review-icon.svg" 
-              alt="Location" 
-              className="w-3 h-3"
-            />
-              <span className="font-normal text-sm">
-                {reviewStats.loading ? '5.0' : reviewStats.averageRating.toFixed(1)}
+              <img
+                src="/icons/common/star-review-icon.svg"
+                alt="Rating"
+                className="w-3 h-3"
+              />
+              <span className="font-normal text-xs">
+                {reviewStats.loading ? '...' : reviewStats.averageRating.toFixed(1)}
               </span>
             </div>
           </div>
-          
-          <p className="text-sm text-[#909090] mb-2">
+
+          {/* Location - Fixed Height */}
+          <p className="text-xs text-[#909090] mb-2 truncate flex-shrink-0">
             {location}
           </p>
 
-
-          {/* Bio */}
-          <p className="text-sm leading-relaxed text-[#71727a] line-clamp-2 mb-2">
+          {/* Bio - Fixed 2 lines */}
+          <p className="text-xs leading-relaxed text-[#71727a] line-clamp-2 mb-3 flex-grow">
             {bio}
           </p>
-        </div>
 
-
-        {/* Bottom Section: Price and Distance */}
-        <div className='p-2'>
-          <div className="flex justify-between items-center">
+          {/* Price and Distance - Fixed at bottom */}
+          <div className="flex justify-between items-center gap-2 mt-auto flex-shrink-0">
             {/* Price */}
-            <div className="flex items-center gap-0.5 w-[120px] h-[30px]">
-              <img 
-                src="/icons/common/money-icon.svg" 
-                alt="Price" 
-                className="w-5 h-5"
+            <div className="flex items-center gap-1 flex-1 min-w-0">
+              <img
+                src="/icons/common/money-icon.svg"
+                alt="Price"
+                className="w-4 h-4 flex-shrink-0"
               />
-              <span className="font-bold text-[#fb7678] text-[12px] whitespace-nowrap overflow-hidden">
+              <span className="font-bold text-[#fb7678] text-xs truncate">
                 {priceDisplay}
               </span>
             </div>
-            
+
             {/* Distance */}
-            <div className="flex items-center gap-0.5 w-[120px] h-[30px]">
-              <img 
-                src="/icons/common/distance-icon.svg" 
-                alt="Location" 
-                className="w-7 h-7"
+            <div className="flex items-center gap-1 flex-1 min-w-0">
+              <img
+                src="/icons/common/distance-icon.svg"
+                alt="Distance"
+                className="w-5 h-5 flex-shrink-0"
               />
-              <span className="font-bold text-[#fb7678] text-[12px] whitespace-nowrap overflow-hidden">
+              <span className="font-bold text-[#fb7678] text-xs truncate">
                 2.5km Away
               </span>
             </div>
@@ -263,7 +263,7 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
 RecommendationCard2.propTypes = {
   listing: PropTypes.shape({
     id: PropTypes.string.isRequired,
-    user_id: PropTypes.string,
+    sitter_id: PropTypes.string,
     title: PropTypes.string,
     description: PropTypes.string,
     service_type: PropTypes.arrayOf(PropTypes.string),

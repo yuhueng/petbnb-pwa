@@ -23,7 +23,7 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
     cover_image_url,
     image_urls,
     profiles,
-    user_id,
+    sitter_id,
   } = listing;
 
 
@@ -37,7 +37,10 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
   // Fetch review statistics for this sitter
   useEffect(() => {
     const fetchReviewStats = async () => {
-      if (!user_id) {
+      // Use sitter_id from listing, or fallback to profiles.id
+      const sitterUserId = sitter_id || profiles?.id;
+
+      if (!sitterUserId) {
         setReviewStats({ averageRating: 0, reviewCount: 0, loading: false });
         return;
       }
@@ -47,7 +50,7 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
         const { data, error } = await supabase
           .from('reviews')
           .select('rating')
-          .eq('sitter_id', user_id)
+          .eq('sitter_id', sitterUserId)
           .eq('is_visible', true);
 
 
@@ -75,7 +78,7 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
 
 
     fetchReviewStats();
-  }, [user_id]);
+  }, [sitter_id, profiles?.id]);
 
 
   // Get sitter name
@@ -204,13 +207,13 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
             
             {/* Rating Badge - Top Right */}
             <div className="flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded-lg flex-shrink-0">
-            <img 
-              src="/icons/common/star-review-icon.svg" 
-              alt="Location" 
+            <img
+              src="/icons/common/star-review-icon.svg"
+              alt="Rating"
               className="w-3 h-3"
             />
               <span className="font-normal text-sm">
-                {reviewStats.loading ? '5.0' : reviewStats.averageRating.toFixed(1)}
+                {reviewStats.loading ? '...' : reviewStats.averageRating.toFixed(1)}
               </span>
             </div>
           </div>
@@ -262,7 +265,7 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
 RecommendationCard.propTypes = {
   listing: PropTypes.shape({
     id: PropTypes.string.isRequired,
-    user_id: PropTypes.string,
+    sitter_id: PropTypes.string,
     title: PropTypes.string,
     description: PropTypes.string,
     service_type: PropTypes.arrayOf(PropTypes.string),

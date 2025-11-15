@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { chatService } from '@/services/chatService';
 import ConversationList from '@/components/common/ConversationList';
@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 const SitterMessages = () => {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -53,6 +54,22 @@ const SitterMessages = () => {
 
     loadConversations();
   }, [user?.id]);
+
+  // Auto-select conversation if conversationId is passed via navigation state
+  useEffect(() => {
+    if (!location.state?.conversationId || conversations.length === 0) return;
+
+    // Find the conversation with the passed ID
+    const targetConversation = conversations.find(
+      (conv) => conv.id === location.state.conversationId
+    );
+
+    if (targetConversation) {
+      setSelectedConversation(targetConversation);
+      // Clear the location state to prevent re-selection on re-render
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [conversations, location.state?.conversationId]);
 
   // Load messages when conversation is selected
   useEffect(() => {

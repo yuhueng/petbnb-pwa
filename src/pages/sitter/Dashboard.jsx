@@ -39,6 +39,9 @@ const Dashboard = () => {
   const [bookingPets, setBookingPets] = useState([]);
   const [loadingPets, setLoadingPets] = useState(false);
 
+  // Toggle state for current bookings view (null = show all cards, bookingId = show that booking's timeline)
+  const [selectedCurrentBooking, setSelectedCurrentBooking] = useState(null);
+
   // Fetch sitter bookings on mount
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -109,26 +112,29 @@ const Dashboard = () => {
     return { currentBookings: current, upcomingBookings: upcoming, pastBookings: past };
   }, [bookings]);
 
-  // Fetch today's activities for current bookings
+  // Fetch today's activities for selected booking
   useEffect(() => {
     const fetchTodayActivities = async () => {
-      if (currentBookings.length > 0) {
-        // Get activities for the first current booking (for now)
-        const booking = currentBookings[0];
-        const result = await petActivityService.getActivitiesByDate(
-          booking.id,
-          new Date()
-        );
-        if (result.success) {
-          setTodayActivities(result.data);
+      if (selectedCurrentBooking) {
+        const booking = currentBookings.find(b => b.id === selectedCurrentBooking);
+        if (booking) {
+          const result = await petActivityService.getActivitiesByDate(
+            booking.id,
+            new Date()
+          );
+          if (result.success) {
+            setTodayActivities(result.data);
+          }
         }
+      } else {
+        setTodayActivities([]);
       }
     };
 
-    if (activeTab === 'current' && currentBookings.length > 0) {
+    if (activeTab === 'current') {
       fetchTodayActivities();
     }
-  }, [activeTab, currentBookings]);
+  }, [activeTab, selectedCurrentBooking, currentBookings]);
 
   if (!isAuthenticated) {
     return (
@@ -674,29 +680,58 @@ const Dashboard = () => {
         {!isLoading && (
           <div className="space-y-6">
             {/* Currently Petsitting Section */}
-            {activeTab === 'current' && currentBookings.length > 0 && (
+            {activeTab === 'current' && currentBookings.length > 0 && selectedCurrentBooking === null && (
               <div className="px-4">
                 <h2 className="text-base font-bold text-[#3e2d2e] mb-3">
                   Currently Petsitting ({currentBookings.filter(b => b.status === 'confirmed' || b.status === 'in_progress').length})
                 </h2>
+                <p className="text-xs text-[#6d6d6d] mb-2">Tap a booking to view routine and timeline</p>
 
                 {currentBookings
                   .filter(b => b.status === 'confirmed' || b.status === 'in_progress')
                   .map(booking => (
-                    <div key={booking.id} className="bg-white rounded-[10px] p-2.5 mb-3 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 transition-all duration-300">
+                    <div
+                      key={booking.id}
+                      onClick={() => setSelectedCurrentBooking(booking.id)}
+                      className="bg-white rounded-[10px] p-2.5 mb-3 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+                    >
                       <div className="flex gap-3">
-                        {/* Pet Image/Icon */} {/* Placeholder pet icon */}
-                        <div className="w-[74px] h-[74px] rounded-[10px] bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-4xl flex-shrink-0">
-                          🐶
-                        </div>
+                        {/* Pet Images */}
+                        {booking.pets && booking.pets.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {booking.pets.slice(0, 1).map(pet => (
+                              pet.avatar_url ? (
+                                <img key={pet.id} src={pet.avatar_url} alt={pet.name} className="w-[74px] h-[74px] rounded-[10px] object-cover flex-shrink-0" />
+                              ) : (
+                                <div key={pet.id} className="w-[74px] h-[74px] rounded-[10px] bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                  {pet.name?.charAt(0).toUpperCase()}
+                                </div>
+                              )
+                            ))}
+                            {booking.pets.length > 1 && (
+                              <div className="text-[8px] text-[#6d6d6d] text-center">+{booking.pets.length - 1} more</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-[74px] h-[74px] rounded-[10px] bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-4xl flex-shrink-0">
+                            🐶
+                          </div>
+                        )}
 
-                        {/* Pet Info */}
+                        {/* Booking Info */}
                         <div className="flex-1 flex flex-col ">
-                          {/* Pet Name and Details */}
+                          {/* Booking Details */}
                           <div className="flex flex-col gap-0.5">
-                            <p className="text-sm font-medium text-black leading-normal">
-                              {booking.listing?.title || 'Pet Sitting Service'}
-                            </p>
+                            {/* Pets Names */}
+                            {booking.pets && booking.pets.length > 0 ? (
+                              <p className="text-sm font-medium text-black leading-normal">
+                                {booking.pets.map(p => p.name).join(', ')}
+                              </p>
+                            ) : (
+                              <p className="text-sm font-medium text-black leading-normal">
+                                {booking.listing?.title || 'Pet Sitting Service'}
+                              </p>
+                            )}
                             <p className="text-[10px] font-light text-[#535353] leading-normal">
                               {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
                             </p>
@@ -728,7 +763,6 @@ const Dashboard = () => {
                                     <span className="text-[6px] font-semibold text-[#fb7678]">OWNER</span>
                                   </span>
                                 </div>
-
                               </div>
                             </div>
 
@@ -741,9 +775,8 @@ const Dashboard = () => {
                               className="px-2 bg-[#fb7678cc] hover:bg-[#fb7678] rounded-[20px] transition-all duration-300 hover:scale-105"
                             >
                               <div className="flex items-center text-center px-2.5 py-1.5">
-                              <span className="text-[8px] font-bold text-white whitespace-nowrap">💬 Message</span>
+                                <span className="text-[8px] font-bold text-white whitespace-nowrap">💬 Message</span>
                               </div>
-                              
                             </button>
                           </div>
                         </div>
@@ -753,8 +786,116 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Pet's Routine Section - Only show for current bookings */}
-            {activeTab === 'current' && currentBookings.length > 0 && (
+            {/* Selected Booking View */}
+            {activeTab === 'current' && selectedCurrentBooking && (
+              <div className="px-4">
+                {/* Back Button */}
+                <button
+                  onClick={() => setSelectedCurrentBooking(null)}
+                  className="flex items-center gap-2 text-sm text-[#fb7678] font-semibold mb-3 hover:underline"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to all bookings
+                </button>
+
+                {/* Selected Booking Card */}
+                {(() => {
+                  const booking = currentBookings.find(b => b.id === selectedCurrentBooking);
+                  if (!booking) return null;
+
+                  return (
+                    <div className="bg-white rounded-[10px] p-2.5 mb-4 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+                      <div className="flex gap-3">
+                        {/* Pet Images */}
+                        {booking.pets && booking.pets.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {booking.pets.slice(0, 1).map(pet => (
+                              pet.avatar_url ? (
+                                <img key={pet.id} src={pet.avatar_url} alt={pet.name} className="w-[74px] h-[74px] rounded-[10px] object-cover flex-shrink-0" />
+                              ) : (
+                                <div key={pet.id} className="w-[74px] h-[74px] rounded-[10px] bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                  {pet.name?.charAt(0).toUpperCase()}
+                                </div>
+                              )
+                            ))}
+                            {booking.pets.length > 1 && (
+                              <div className="text-[8px] text-[#6d6d6d] text-center">+{booking.pets.length - 1} more</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-[74px] h-[74px] rounded-[10px] bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-4xl flex-shrink-0">
+                            🐶
+                          </div>
+                        )}
+
+                        {/* Booking Info */}
+                        <div className="flex-1 flex flex-col">
+                          <div className="flex flex-col gap-0.5">
+                            {booking.pets && booking.pets.length > 0 ? (
+                              <p className="text-sm font-medium text-black leading-normal">
+                                {booking.pets.map(p => p.name).join(', ')}
+                              </p>
+                            ) : (
+                              <p className="text-sm font-medium text-black leading-normal">
+                                {booking.listing?.title || 'Pet Sitting Service'}
+                              </p>
+                            )}
+                            <p className="text-[10px] font-light text-[#535353] leading-normal">
+                              {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
+                            </p>
+                            <div className="h-px bg-[#e5e5e5] my-1"></div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              {booking.owner?.avatar_url ? (
+                                <img
+                                  src={booking.owner.avatar_url}
+                                  alt={booking.owner.name}
+                                  className="w-[27px] h-[27px] rounded-full object-cover border border-gray-200 flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-[27px] h-[27px] rounded-full bg-gradient-to-br from-[#ffd189] to-[#ffb347] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                                  {booking.owner?.name?.charAt(0).toUpperCase() || 'O'}
+                                </div>
+                              )}
+
+                              <div className="flex flex-col gap-px">
+                                <p className="text-xs font-medium text-black leading-normal">
+                                  {booking.owner?.name || 'Owner'}
+                                </p>
+                                <div className="flex items-center text-center">
+                                  <span className="inline-flex items-center px-0.5 py-0.5 bg-[#fcf3f3] border border-[#fb7678] rounded-sm">
+                                    <span className="text-[6px] font-semibold text-[#fb7678]">OWNER</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleGoToChat(booking);
+                              }}
+                              className="px-2 bg-[#fb7678cc] hover:bg-[#fb7678] rounded-[20px] transition-all duration-300 hover:scale-105"
+                            >
+                              <div className="flex items-center text-center px-2.5 py-1.5">
+                                <span className="text-[8px] font-bold text-white whitespace-nowrap">💬 Message</span>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Pet's Routine Section - Only show when a booking is selected */}
+            {activeTab === 'current' && selectedCurrentBooking && (
               <div className="px-4">
                 <div className="bg-[#fb7678e6] rounded-[10px] p-3 sm:p-4 shadow-[0_4px_12px_rgba(251,118,120,0.3)]">
                   <h2 className="text-sm sm:text-base font-extrabold text-white mb-3 sm:mb-4 text-center">Pet Care Routine</h2>
@@ -848,8 +989,8 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* Pet's Timeline Section */}
-            {activeTab === 'current' && currentBookings.length > 0 && (
+            {/* Pet's Timeline Section - Only show when a booking is selected */}
+            {activeTab === 'current' && selectedCurrentBooking && (
               <div className="px-4 pb-6">
                 <div className="relative bg-white rounded-[15px] p-4 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
                   <h2 className="text-base font-bold text-[#3e2d2e] mb-1">Today's Timeline</h2>
@@ -1589,12 +1730,25 @@ const Dashboard = () => {
 
                 {/* Header */}
                 <div className="p-6 pb-4">
-                  <h2 className="text-base font-bold text-[#3e2d2e] mb-1">
-                    {selectedPastBooking.listing?.title || 'Pet Sitting Service'} - Timeline
-                  </h2>
-                  <p className="text-base font-semibold text-[#fe8c85]">
-                    {new Date(selectedPastBooking.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {new Date(selectedPastBooking.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  </p>
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h2 className="text-base font-bold text-[#3e2d2e] mb-1">
+                        {selectedPastBooking.listing?.title || 'Pet Sitting Service'} - Timeline
+                      </h2>
+                      <p className="text-base font-semibold text-[#fe8c85]">
+                        {new Date(selectedPastBooking.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {new Date(selectedPastBooking.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleGoToChat(selectedPastBooking);
+                      }}
+                      className="px-3 py-2 bg-[#fb7678] hover:bg-[#fa6568] rounded-[15px] transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                    >
+                      <span className="text-xs font-bold text-white whitespace-nowrap">💬 Message</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Timeline Content */}

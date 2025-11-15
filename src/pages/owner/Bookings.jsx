@@ -26,6 +26,12 @@ const Bookings = () => {
   const [requestCooldowns, setRequestCooldowns] = useState({});
   const [recentRequests, setRecentRequests] = useState([]);
 
+  // Current bookings activities (for live timeline in Current tab)
+  const [currentBookingActivities, setCurrentBookingActivities] = useState([]);
+
+  // Toggle state for current bookings view (null = show all cards, bookingId = show that booking's timeline)
+  const [selectedCurrentBooking, setSelectedCurrentBooking] = useState(null);
+
   // Fetch owner bookings on mount
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -113,6 +119,45 @@ const Bookings = () => {
 
     return { currentBookings: current, upcomingBookings: upcoming, pastBookings: past };
   }, [bookings]);
+
+  // Fetch activities for current bookings and set up auto-refresh
+  useEffect(() => {
+    const fetchCurrentActivities = async () => {
+      if (!isAuthenticated || !user || currentBookings.length === 0) {
+        setCurrentBookingActivities([]);
+        return;
+      }
+
+      try {
+        const bookingIds = currentBookings.map(b => b.id);
+
+        const { data, error } = await supabase
+          .from('pet_activities')
+          .select('*')
+          .in('booking_id', bookingIds)
+          .order('activity_timestamp', { ascending: false });
+
+        if (error) throw error;
+        setCurrentBookingActivities(data || []);
+      } catch (error) {
+        console.error('Error fetching current booking activities:', error);
+        setCurrentBookingActivities([]);
+      }
+    };
+
+    // Fetch initially
+    fetchCurrentActivities();
+
+    // Set up auto-refresh every 30 seconds when on Current tab
+    let intervalId;
+    if (activeTab === 'current' && currentBookings.length > 0) {
+      intervalId = setInterval(fetchCurrentActivities, 30000); // Refresh every 30 seconds
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isAuthenticated, user, currentBookings, activeTab]);
 
   // Fetch activities for a specific booking
   const fetchActivitiesForBooking = async (bookingId) => {
@@ -205,6 +250,27 @@ const Bookings = () => {
     return Math.ceil(remaining / 60000);
   };
 
+  // Handle go to chat with sitter
+  const handleGoToChat = async (booking) => {
+    if (!booking || !user) return;
+
+    try {
+      // Get or create conversation - owner to sitter
+      // user.id = owner (current user)
+      // booking.pet_sitter_id = sitter
+      const conversation = await chatService.getOrCreateConversationExplicit(
+        user.id,
+        booking.pet_sitter_id
+      );
+
+      // Navigate to messages with the conversation
+      navigate('/owner/messages', { state: { conversationId: conversation.id } });
+    } catch (error) {
+      console.error('Failed to navigate to chat:', error);
+      alert('Failed to open chat. Please try again.');
+    }
+  };
+
   // Handle pet care request (walk, feed, play)
   const handleCareRequest = async (booking, requestType) => {
     if (!user) return;
@@ -280,9 +346,9 @@ const Bookings = () => {
         key={booking.id}
         className="bg-white rounded-[10px] shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)] p-3 sm:p-4 mb-3"
       >
-        {/* Header with Sitter Info */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
+        {/* Header with Sitter Info and Status */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3 flex-1">
             {booking.sitter?.avatar_url ? (
               <img
                 src={booking.sitter.avatar_url}
@@ -294,21 +360,46 @@ const Bookings = () => {
                 {booking.sitter?.name?.charAt(0).toUpperCase()}
               </div>
             )}
-            <div>
+            <div className="flex-1">
               <h3 className="font-bold text-sm text-[#3e2d2e]">{booking.sitter?.name}</h3>
               <p className="text-xs text-[#6d6d6d]">{booking.listing?.title}</p>
             </div>
           </div>
-          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-            booking.status === 'confirmed' ? 'bg-[#a2d08a] text-white' :
-            booking.status === 'pending' ? 'bg-[#ffc369] text-white' :
-            booking.status === 'in_progress' ? 'bg-[#c0a7fe] text-white' :
-            booking.status === 'completed' ? 'bg-[#fb7678] text-white' :
-            'bg-[#d9d9d9] text-[#6d6d6d]'
-          }`}>
-            {booking.status}
-          </span>
+          <div className="flex flex-col items-end">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleGoToChat(booking);
+              }}
+              className="px-2 bg-[#fb7678cc] hover:bg-[#fb7678] rounded-[20px] transition-all duration-300 hover:scale-105"
+            >
+              <div className="flex items-center text-center px-2.5 py-1.5">
+                <span className="text-[8px] font-bold text-white whitespace-nowrap">💬 Message</span>
+              </div>
+            </button>
+          </div>
         </div>
+
+        {/* Pets Info */}
+        {booking.pets && booking.pets.length > 0 && (
+          <div className="mb-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {booking.pets.map((pet, index) => (
+                <div key={pet.id} className="flex items-center gap-1.5 bg-[#fef5f6] rounded-full px-2 py-1">
+                  {pet.avatar_url ? (
+                    <img src={pet.avatar_url} alt={pet.name} className="w-5 h-5 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-white text-[8px] font-bold">
+                      {pet.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="text-[10px] font-semibold text-[#3e2d2e]">{pet.name}</span>
+                  <span className="text-[8px] text-[#6d6d6d]">({pet.species})</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Date Range */}
         <div className="bg-[#fef5f6] rounded-[10px] p-2 mb-2">
@@ -416,11 +507,11 @@ const Bookings = () => {
   const getActivityStyle = (type) => {
     switch (type) {
       case 'walk':
-        return { color: '#ffc369', icon: '/icons/common/walk-icon.svg' };
+        return { color: '#ffc369', icon: '/icons/common/walk-white-icon.svg' };
       case 'feed':
-        return { color: '#a2d08a', icon: '/icons/common/feed-icon.svg' };
+        return { color: '#a2d08a', icon: '/icons/common/feed-white-icon.svg' };
       case 'play':
-        return { color: '#c0a7fe', icon: '/icons/common/play-icon.svg' };
+        return { color: '#c0a7fe', icon: '/icons/common/play-white-icon.svg' };
       default:
         return { color: '#d9d9d9', icon: null };
     }
@@ -511,11 +602,38 @@ const Bookings = () => {
                   Find a Sitter
                 </button>
               </div>
+            ) : selectedCurrentBooking === null ? (
+              <>
+                {/* Booking Cards - Clickable to view timeline */}
+                <div className="mb-4">
+                  <p className="text-xs text-[#6d6d6d] mb-2 px-1">Tap a booking to view timeline and requests</p>
+                  {currentBookings.map(booking => (
+                    <div
+                      key={booking.id}
+                      onClick={() => setSelectedCurrentBooking(booking.id)}
+                      className="cursor-pointer hover:scale-[1.02] transition-transform"
+                    >
+                      {renderBookingCard(booking)}
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
               <>
-                {/* Booking Cards */}
+                {/* Back Button */}
+                <button
+                  onClick={() => setSelectedCurrentBooking(null)}
+                  className="flex items-center gap-2 text-sm text-[#fb7678] font-semibold mb-4 hover:underline"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to all bookings
+                </button>
+
+                {/* Selected Booking Card */}
                 <div className="mb-4">
-                  {currentBookings.map(renderBookingCard)}
+                  {renderBookingCard(currentBookings.find(b => b.id === selectedCurrentBooking))}
                 </div>
 
                 {/* Pet Care REQUEST Cards */}
@@ -525,9 +643,9 @@ const Bookings = () => {
                   </h2>
 
                   <div className="flex gap-2 justify-center">
-                    {renderCareRequestCard('walk', '#ffc369', '/icons/common/walk-icon.svg', currentBookings)}
-                    {renderCareRequestCard('feed', '#a2d08a', '/icons/common/feed-icon.svg', currentBookings)}
-                    {renderCareRequestCard('play', '#c0a7fe', '/icons/common/play-icon.svg', currentBookings)}
+                    {renderCareRequestCard('walk', '#ffc369', '/icons/common/walk-icon.svg', [currentBookings.find(b => b.id === selectedCurrentBooking)])}
+                    {renderCareRequestCard('feed', '#a2d08a', '/icons/common/feed-icon.svg', [currentBookings.find(b => b.id === selectedCurrentBooking)])}
+                    {renderCareRequestCard('play', '#c0a7fe', '/icons/common/play-icon.svg', [currentBookings.find(b => b.id === selectedCurrentBooking)])}
                   </div>
 
                   <p className="text-[10px] text-white text-center mt-10 opacity-90">
@@ -536,14 +654,115 @@ const Bookings = () => {
                   <p className="text-[10px] text-white text-center opacity-90">
                     (15min cooldown per type)
                   </p>
-                  
+
                 </div>
 
                 {/* Instructions */}
-                <div className="bg-white rounded-[10px] p-3 text-xs text-[#6d6d6d] shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)]">
+                <div className="bg-white rounded-[10px] p-3 text-xs text-[#6d6d6d] shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)] mb-4">
                   <p className="font-semibold mb-1">💡 How it works:</p>
                   <p>Tap a request card to send a message to your sitter asking for a photo update. Each request type has a 15-minute cooldown to prevent spam.</p>
                 </div>
+
+                {/* Live Activity Timeline for selected booking */}
+                {currentBookingActivities.filter(a => a.booking_id === selectedCurrentBooking).length > 0 && (
+                  <div className="bg-white rounded-[10px] p-4 shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)]">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-base font-bold text-[#3e2d2e]">Recent Activities</h2>
+                      <span className="text-xs text-[#6d6d6d]">Updates every 30s</span>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="space-y-4">
+                      {currentBookingActivities.filter(a => a.booking_id === selectedCurrentBooking).slice(0, 5).map((activity, index, filteredArray) => {
+                        const { color, icon } = getActivityStyle(activity.activity_type);
+                        const timeStr = new Date(activity.activity_timestamp).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        });
+                        const dateStr = new Date(activity.activity_timestamp).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                        });
+
+                        return (
+                          <div key={activity.id} className="relative">
+                            <div className="flex items-start gap-3">
+                              {/* Activity Icon */}
+                              <div
+                                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: color }}
+                              >
+                                {icon && <img src={icon} alt={activity.activity_type} className="w-5 h-5" />}
+                              </div>
+
+                              {/* Activity Details */}
+                              <div className="flex-1 pt-1">
+                                <div className="flex items-start justify-between mb-1">
+                                  <p className="text-sm font-semibold text-black">{activity.activity_title}</p>
+                                  <div className="text-xs text-[#6d6d6d] ml-2 text-right">
+                                    <p>{timeStr}</p>
+                                    <p className="text-[10px]">{dateStr}</p>
+                                  </div>
+                                </div>
+
+                                {activity.activity_description && (
+                                  <p className="text-xs text-[#6d6d6d] mb-2">{activity.activity_description}</p>
+                                )}
+
+                                {/* Image Gallery */}
+                                {activity.image_urls && activity.image_urls.length > 0 && (
+                                  <div className="flex gap-2 flex-wrap">
+                                    {activity.image_urls.slice(0, 3).map((url, i) => (
+                                      <img
+                                        key={i}
+                                        src={url}
+                                        alt={`${activity.activity_type} ${i + 1}`}
+                                        className="w-[80px] h-[80px] rounded-[8px] object-cover shadow-sm"
+                                      />
+                                    ))}
+                                    {activity.image_urls.length > 3 && (
+                                      <div className="w-[80px] h-[80px] rounded-[8px] bg-[#fef5f6] flex items-center justify-center">
+                                        <span className="text-xs text-[#fb7678] font-semibold">
+                                          +{activity.image_urls.length - 3}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Connecting Line */}
+                            {index < filteredArray.length - 1 && (
+                              <div
+                                className="absolute left-[20px] w-0.5 -bottom-4"
+                                style={{
+                                  height: activity.image_urls && activity.image_urls.length > 0 ? '120px' : '32px',
+                                  background: `linear-gradient(to bottom, ${color}, ${getActivityStyle(filteredArray[index + 1].activity_type).color})`,
+                                }}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* View All Link */}
+                    {currentBookingActivities.filter(a => a.booking_id === selectedCurrentBooking).length > 5 && (
+                      <button
+                        onClick={() => {
+                          const selectedBooking = currentBookings.find(b => b.id === selectedCurrentBooking);
+                          if (selectedBooking) {
+                            handleViewTimeline(selectedBooking);
+                          }
+                        }}
+                        className="w-full mt-4 py-2 text-sm text-[#fb7678] font-semibold hover:underline"
+                      >
+                        View All Activities ({currentBookingActivities.filter(a => a.booking_id === selectedCurrentBooking).length})
+                      </button>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -671,12 +890,25 @@ const Bookings = () => {
                   {/* Header */}
                   <div className="bg-[#fb7678] px-6 py-6 text-white">
                     <h2 className="text-xl font-bold mb-2">Activity Timeline</h2>
-                    <p className="text-sm opacity-90">{selectedBookingForTimeline.sitter?.name}</p>
-                    <p className="text-xs opacity-75">
-                      {new Date(selectedBookingForTimeline.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      {' - '}
-                      {new Date(selectedBookingForTimeline.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm opacity-90">{selectedBookingForTimeline.sitter?.name}</p>
+                        <p className="text-xs opacity-75">
+                          {new Date(selectedBookingForTimeline.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {' - '}
+                          {new Date(selectedBookingForTimeline.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGoToChat(selectedBookingForTimeline);
+                        }}
+                        className="px-3 py-2 bg-white hover:bg-gray-100 rounded-[15px] transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                      >
+                        <span className="text-xs font-bold text-[#fb7678] whitespace-nowrap">💬 Message</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Timeline Content */}
@@ -745,8 +977,9 @@ const Bookings = () => {
                                   {/* Connecting Line */}
                                   {activityIndex < dateActivities.length - 1 && (
                                     <div
-                                      className="absolute left-[20px] w-0.5 h-6 mt-1"
+                                      className="absolute left-[20px] w-0.5 -bottom-4"
                                       style={{
+                                        height: activity.image_urls && activity.image_urls.length > 0 ? '140px' : '32px',
                                         background: `linear-gradient(to bottom, ${color}, ${getActivityStyle(dateActivities[activityIndex + 1].activity_type).color})`
                                       }}
                                     />

@@ -738,7 +738,7 @@ const Explore = () => {
                 {/* Date Range Filter */}
                 <div>
                   <label className="block text-base font-bold text-[#3e2d2e] font-['Inter'] mb-1">
-                    When do you need care?
+                    Date Range
                   </label>
                   <p className="text-xs text-[#6d6d6d] font-['Inter'] mb-3">
                     Select check-in and check-out dates

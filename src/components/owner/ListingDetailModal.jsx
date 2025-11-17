@@ -155,6 +155,17 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
   const sitterBio = profiles?.bio;
   const sitterLocation = address || profiles?.location || 'Location not specified';
 
+  // Calculate price display (matching RecommendationCard logic)
+  const priceDisplay = (() => {
+    if (price_per_day) {
+      return `$${(price_per_day / 100).toFixed(0)}/day`;
+    }
+    if (price_per_hour) {
+      return `$${(price_per_hour / 100).toFixed(0)}/hour`;
+    }
+    return 'Price TBD';
+  })();
+
   // Handle close with animation
   const handleClose = () => {
     setIsClosing(true);
@@ -207,6 +218,27 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
     setShowBookingForm(true);
   };
 
+  // Calculate total price based on dates and listing price
+  const calculateTotalPrice = () => {
+    if (!bookingForm.startDate || !bookingForm.endDate) return 0;
+
+    const start = new Date(bookingForm.startDate);
+    const end = new Date(bookingForm.endDate);
+    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+    if (days <= 0) return 0;
+
+    // Price is stored in cents in the database
+    if (price_per_day) {
+      return price_per_day * days; // Total in cents
+    } else if (price_per_hour) {
+      // Assume 24 hours per day for hourly rate
+      return price_per_hour * days * 24; // Total in cents
+    }
+
+    return 0;
+  };
+
   // Handle booking submission
   const handleSubmitBooking = async () => {
     if (!bookingForm.startDate || !bookingForm.endDate) {
@@ -219,6 +251,8 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
       return;
     }
 
+    const totalPrice = calculateTotalPrice();
+
     setIsCreatingBooking(true);
     try {
       const bookingData = {
@@ -230,20 +264,23 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
         end_date: bookingForm.endDate,
         special_requests: bookingForm.specialRequests,
         status: 'pending',
+        total_price: totalPrice,
       };
 
       const result = await bookingService.createBooking(bookingData);
 
-      if (result.success) {
+      // Service returns data directly on success, throws error on failure
+      if (result && result.id) {
         toast.success('Booking request sent successfully!');
+        setShowBookingForm(false);
         handleClose();
         navigate('/owner/bookings');
       } else {
-        toast.error(result.error || 'Failed to create booking');
+        toast.error('Failed to create booking');
       }
     } catch (error) {
       console.error('Booking error:', error);
-      toast.error('Failed to create booking. Please try again.');
+      toast.error(error.message || 'Failed to create booking. Please try again.');
     } finally {
       setIsCreatingBooking(false);
     }
@@ -342,7 +379,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
               <h2 className="text-2xl font-bold leading-tight mb-1">{sitterName}</h2>
               <p className="text-sm opacity-90 mb-2">{sitterLocation}</p>
               <p className="text-base font-semibold">
-                ${price_per_day}/day {price_per_hour && `• $${price_per_hour}/hour`}
+                {priceDisplay}
               </p>
             </div>
           </div>
@@ -391,55 +428,23 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
             )}
           </div>
 
-          {/* 3. Reviews Section */}
-          <div className="p-5 border-b border-[#e9e9e9]">
-            <h3 className="text-lg font-semibold text-[#1d1a20] mb-4">Latest Reviews</h3>
-            {loadingReviews ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#fb7678]"></div>
-              </div>
-            ) : reviews.length > 0 ? (
-              <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                {reviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="bg-[#fef5f6] p-3 rounded-lg border border-[#e9e9e9]"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      {review.reviewer?.avatar_url ? (
-                        <img
-                          src={review.reviewer.avatar_url}
-                          alt={review.reviewer.name || 'Reviewer'}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-white text-xs font-bold">
-                          {(review.reviewer?.name || 'A').charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-[13px] font-semibold text-[#1d1a20]">
-                          {review.reviewer?.name || 'Anonymous'}
-                        </p>
-                        <p className="text-xs text-[#6f6f6f]">{formatReviewDate(review.created_at)}</p>
-                      </div>
-                    </div>
-                    <div className="text-[#fb7678] text-xs mb-1.5 tracking-wide">
-                      {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
-                    </div>
-                    <p className="text-[13px] leading-relaxed text-[#494a50] line-clamp-3">
-                      {review.comment}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-2">💬</div>
-                <p className="text-sm text-[#6f6f6f]">No reviews yet</p>
-              </div>
-            )}
-          </div>
+          {/* 3. Additional Details Section */}
+          {(description || house_rules) && (
+            <div className="p-5 border-b border-[#e9e9e9]">
+              {description && (
+                <>
+                  <h3 className="text-lg font-semibold text-[#1d1a20] mb-2">About</h3>
+                  <p className="text-sm text-[#494a50] leading-relaxed mb-4">{description}</p>
+                </>
+              )}
+              {house_rules && (
+                <>
+                  <h3 className="text-lg font-semibold text-[#1d1a20] mb-2">House Rules</h3>
+                  <p className="text-sm text-[#494a50] leading-relaxed">{house_rules}</p>
+                </>
+              )}
+            </div>
+          )}
 
           {/* 4. Accepted Pet Types Section */}
           {accepted_pet_types && accepted_pet_types.length > 0 && (
@@ -557,23 +562,56 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
             </div>
           </div>
 
-          {/* 6. Additional Details Section */}
-          {(description || house_rules) && (
-            <div className="p-5 border-b border-[#e9e9e9]">
-              {description && (
-                <>
-                  <h3 className="text-lg font-semibold text-[#1d1a20] mb-2">About</h3>
-                  <p className="text-sm text-[#494a50] leading-relaxed mb-4">{description}</p>
-                </>
-              )}
-              {house_rules && (
-                <>
-                  <h3 className="text-lg font-semibold text-[#1d1a20] mb-2">House Rules</h3>
-                  <p className="text-sm text-[#494a50] leading-relaxed">{house_rules}</p>
-                </>
-              )}
-            </div>
-          )}
+          {/* 3. Reviews Section */}
+          <div className="p-5 border-b border-[#e9e9e9]">
+            <h3 className="text-lg font-semibold text-[#1d1a20] mb-4">Latest Reviews</h3>
+            {loadingReviews ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#fb7678]"></div>
+              </div>
+            ) : reviews.length > 0 ? (
+              <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                {reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="bg-[#fef5f6] p-3 rounded-lg border border-[#e9e9e9]"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      {review.reviewer?.avatar_url ? (
+                        <img
+                          src={review.reviewer.avatar_url}
+                          alt={review.reviewer.name || 'Reviewer'}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-white text-xs font-bold">
+                          {(review.reviewer?.name || 'A').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-[13px] font-semibold text-[#1d1a20]">
+                          {review.reviewer?.name || 'Anonymous'}
+                        </p>
+                        <p className="text-xs text-[#6f6f6f]">{formatReviewDate(review.created_at)}</p>
+                      </div>
+                    </div>
+                    <div className="text-[#fb7678] text-xs mb-1.5 tracking-wide">
+                      {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                    </div>
+                    <p className="text-[13px] leading-relaxed text-[#494a50] line-clamp-3">
+                      {review.comment}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">💬</div>
+                <p className="text-sm text-[#6f6f6f]">No reviews yet</p>
+              </div>
+            )}
+          </div>
+
 
           {/* 7. Action Buttons */}
           <div className="p-5 flex gap-3">
@@ -659,7 +697,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
             </div>
 
             {/* Special Requests */}
-            <div className="mb-6">
+            <div className="mb-4">
               <label className="block text-sm font-semibold text-[#494a50] mb-2">
                 Special Requests (Optional)
               </label>
@@ -671,6 +709,30 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
                 placeholder="Any special instructions..."
               />
             </div>
+
+            {/* Price Summary */}
+            {bookingForm.startDate && bookingForm.endDate && (
+              <div className="mb-6 p-4 bg-[#fef5f6] border border-[#fb7678] rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-semibold text-[#494a50]">Duration:</span>
+                  <span className="text-sm text-[#494a50]">
+                    {Math.ceil((new Date(bookingForm.endDate) - new Date(bookingForm.startDate)) / (1000 * 60 * 60 * 24))} days
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-semibold text-[#494a50]">Rate:</span>
+                  <span className="text-sm text-[#494a50]">
+                    {price_per_day ? `$${(price_per_day / 100).toFixed(0)}/day` : `$${(price_per_hour / 100).toFixed(0)}/hour`}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-[#fb7678]/30 flex justify-between items-center">
+                  <span className="text-base font-bold text-[#1d1a20]">Total Price:</span>
+                  <span className="text-xl font-bold text-[#fb7678]">
+                    ${(calculateTotalPrice() / 100).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Buttons */}
             <div className="flex gap-3">

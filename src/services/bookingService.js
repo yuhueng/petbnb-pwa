@@ -21,15 +21,15 @@ class BookingService {
       .from('bookings')
       .insert([
         {
-          listing_id: bookingData.listingId,
-          pet_owner_id: bookingData.ownerId,
-          pet_sitter_id: bookingData.sitterId,
-          pet_ids: bookingData.petIds || [], // Empty array for now
-          start_date: bookingData.startDate,
-          end_date: bookingData.endDate,
-          status: 'pending',
-          total_price: bookingData.totalPrice || null,
-          special_requests: bookingData.specialRequests || null,
+          listing_id: bookingData.listing_id || bookingData.listingId,
+          pet_owner_id: bookingData.pet_owner_id || bookingData.ownerId,
+          pet_sitter_id: bookingData.pet_sitter_id || bookingData.sitterId,
+          pet_ids: bookingData.pet_ids || bookingData.petIds || [],
+          start_date: bookingData.start_date || bookingData.startDate,
+          end_date: bookingData.end_date || bookingData.endDate,
+          status: bookingData.status || 'pending',
+          total_price: bookingData.total_price || bookingData.totalPrice || null,
+          special_requests: bookingData.special_requests || bookingData.specialRequests || null,
         },
       ])
       .select(`

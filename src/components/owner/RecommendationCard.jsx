@@ -267,7 +267,7 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
 
 
           {/* Bio */}
-          <p className="text-sm leading-relaxed text-[#71727a] line-clamp-2 mb-2">
+          <p className="text-sm leading-tight text-[#71727a] line-clamp-1 mb-2 truncate">
             {bio}
           </p>
 
@@ -290,24 +290,24 @@ const RecommendationCard = ({ listing, onClick, isInWishlist = false, onToggleWi
         {/* Bottom Section: Price and Distance */}
         <div className="flex justify-between items-center">
           {/* Price */}
-          <div className="flex items-center gap-0.5 w-[120px] h-[30px]">
-            <img 
-              src="/icons/common/money-icon.svg" 
-              alt="Price" 
-              className="w-5 h-5"
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            <img
+              src="/icons/common/money-icon.svg"
+              alt="Price"
+              className="w-5 h-5 flex-shrink-0"
             />
             <span className="font-bold text-[#fb7678] text-[12px] whitespace-nowrap overflow-hidden">
               {priceDisplay}
             </span>
           </div>
-          
+
           {/* Distance - Only show if we have distance data */}
           {distance !== null && (
-            <div className="flex items-center gap-0.5 w-[120px] h-[30px]">
+            <div className="flex items-center gap-1 flex-1 min-w-0">
               <img
                 src="/icons/common/distance-icon.svg"
                 alt="Location"
-                className="w-7 h-7"
+                className="w-5 h-5 flex-shrink-0"
               />
               <span className="font-bold text-[#fb7678] text-[12px] whitespace-nowrap overflow-hidden">
                 {formatDistance(distance)} Away

@@ -23,15 +23,10 @@ const ChatInterface = ({
 
   const otherParticipant = conversation?.otherParticipant;
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change (within the messages container only)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   }, [messages]);
-
-  // Focus input when conversation changes
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [conversation?.id]);
 
   // Clean up file preview URL when component unmounts or file changes
   useEffect(() => {
@@ -92,7 +87,6 @@ const ChatInterface = ({
       // Clear form
       setMessageText('');
       handleRemoveFile();
-      inputRef.current?.focus();
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {

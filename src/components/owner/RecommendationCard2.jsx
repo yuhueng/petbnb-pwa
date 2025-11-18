@@ -265,8 +265,8 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
             {location}
           </p>
 
-          {/* Bio - Fixed 2 lines */}
-          <p className="text-xs leading-relaxed text-[#71727a] line-clamp-2 mb-2 flex-grow">
+          {/* Bio - Fixed 1 line */}
+          <p className="text-xs leading-relaxed text-[#71727a] line-clamp-2 mb-2 flex-shrink-0">
             {bio}
           </p>
 
@@ -309,7 +309,7 @@ const RecommendationCard2 = ({ listing, onClick, isInWishlist = false, onToggleW
                 <img
                   src="/icons/common/distance-icon.svg"
                   alt="Distance"
-                  className="w-5 h-5 flex-shrink-0"
+                  className="w-4 h-4 flex-shrink-0"
                 />
                 <span className="font-bold text-[#fb7678] text-xs truncate">
                   {formatDistance(distance)} Away

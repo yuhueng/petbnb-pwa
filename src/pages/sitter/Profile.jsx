@@ -32,6 +32,20 @@ const Profile = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const avatarInputRef = useRef(null);
 
+  // Pet roaming setting
+  const [isPetRoamingEnabled, setIsPetRoamingEnabled] = useState(() => {
+    const saved = localStorage.getItem('petRoamingEnabled');
+    return saved !== null ? JSON.parse(saved) : true; // Default to enabled
+  });
+
+  const handleTogglePetRoaming = () => {
+    const newValue = !isPetRoamingEnabled;
+    setIsPetRoamingEnabled(newValue);
+    localStorage.setItem('petRoamingEnabled', JSON.stringify(newValue));
+    // Trigger re-render of Layout component
+    window.dispatchEvent(new Event('petRoamingToggled'));
+  };
+
   // Fetch profile stats when modal opens
   useEffect(() => {
     const fetchStats = async () => {
@@ -622,7 +636,7 @@ const Profile = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-gray-200">
+              {/* <div className="flex items-center justify-between py-3 border-b border-gray-200">
                 <div>
                   <p className="font-medium text-text-primary">Push Notifications</p>
                   <p className="text-sm text-text-secondary">Receive booking updates</p>
@@ -640,10 +654,23 @@ const Profile = () => {
                 <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-[#fb7678]">
                   <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-6" />
                 </button>
-              </div>
+              </div> */}
 
-              <div className="py-3">
-                <p className="text-sm text-text-tertiary">More settings coming soon...</p>
+              <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                <div>
+                  <p className="font-medium text-text-primary">Pet Roaming Animation</p>
+                  <p className="text-sm text-text-secondary">Show animated pet in header</p>
+                </div>
+                <button
+                  onClick={handleTogglePetRoaming}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    isPetRoamingEnabled ? 'bg-[#fb7678]' : 'bg-gray-200'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                    isPetRoamingEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+                </button>
               </div>
             </div>
 

@@ -271,6 +271,33 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
 
       // Service returns data directly on success, throws error on failure
       if (result && result.id) {
+        // Get selected pets details for the message
+        const selectedPets = pets.filter(p => bookingForm.selectedPetIds.includes(p.id));
+        const petNames = selectedPets.map(p => p.name).join(', ');
+
+        // Create/get conversation with sitter
+        const conversation = await chatService.getOrCreateConversationExplicit(
+          user.id,
+          profiles.id
+        );
+
+        // Send booking request message to sitter
+        const bookingMessage = `📋 New Booking Request\n\n📅 Dates: ${new Date(bookingForm.startDate).toLocaleDateString()} - ${new Date(bookingForm.endDate).toLocaleDateString()}\n🏠 Service: ${listing.title}\n🐾 Pets: ${petNames}\n💰 Total: $${(totalPrice / 100).toFixed(2)}${bookingForm.specialRequests ? `\n\n📝 Special Requests: ${bookingForm.specialRequests}` : ''}\n\nPlease review and respond to this booking request.`;
+
+        await chatService.sendMessage({
+          conversationId: conversation.id,
+          senderId: user.id,
+          content: bookingMessage,
+          metadata: {
+            type: 'booking_request',
+            booking_id: result.id,
+            listing_id: listing.id,
+            start_date: bookingForm.startDate,
+            end_date: bookingForm.endDate,
+            total_price: totalPrice,
+          },
+        });
+
         toast.success('Booking request sent successfully!');
         setShowBookingForm(false);
         handleClose();

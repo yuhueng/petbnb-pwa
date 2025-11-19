@@ -1,12 +1,34 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { USER_ROLES } from '@/utils/constants';
+import { useSitePet } from '@/hooks/useSitePet';
 import toast from 'react-hot-toast';
 
 const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { activeRole, profile, switchRole, isAuthenticated } = useAuthStore();
+
+  // Pet roaming enabled state
+  const [isPetRoamingEnabled, setIsPetRoamingEnabled] = useState(() => {
+    const saved = localStorage.getItem('petRoamingEnabled');
+    return saved !== null ? JSON.parse(saved) : true; // Default to enabled
+  });
+
+  // Listen for toggle changes
+  useEffect(() => {
+    const handleToggle = () => {
+      const saved = localStorage.getItem('petRoamingEnabled');
+      setIsPetRoamingEnabled(saved !== null ? JSON.parse(saved) : true);
+    };
+
+    window.addEventListener('petRoamingToggled', handleToggle);
+    return () => window.removeEventListener('petRoamingToggled', handleToggle);
+  }, []);
+
+  // Initialize site-pet in the header area (conditionally based on setting)
+  useSitePet('header-pet-zone', '/images/dogs-spritesheet.png', isPetRoamingEnabled);
 
   const isOwnerView = location.pathname.startsWith('/owner');
   const isSitterView = location.pathname.startsWith('/sitter');
@@ -61,18 +83,29 @@ const Layout = () => {
       {/* Header */}
       <header className="bg-white shadow-[0px_1px_4px_rgba(0,0,0,0.25)] sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center gap-4">
+            {/* Logo */}
             <h1
-              className="text-xl sm:text-2xl font-bold text-[#fb7678] cursor-pointer font-['Inter']"
+              className="text-xl sm:text-2xl font-bold text-[#fb7678] cursor-pointer font-['Inter'] flex-shrink-0"
               onClick={() => navigate('/owner/explore')}
             >
               PetBNB
             </h1>
-            <div className="flex gap-2">
+
+            {/* Pet Zone - Between Logo and Button */}
+            <div
+              id="header-pet-zone"
+              className="relative flex-1 h-16 overflow-hidden"
+            >
+              {/* Pet will roam here only */}
+            </div>
+
+            {/* Toggle/Login Button */}
+            <div className="flex gap-2 flex-shrink-0">
               {isAuthenticated ? (
                 <button
                   onClick={handleRoleSwitch}
-                  className="px-4 py-2 text-sm font-semibold text-[#fb7678] bg-[#fcf3f3] border border-[#fb7678] rounded-[30px] hover:bg-[#f5f5f5] transition-all duration-300"
+                  className="px-4 py-2 text-sm font-semibold text-[#fb7678] bg-[#fcf3f3] border border-[#fb7678] rounded-[30px] hover:bg-[#f5f5f5] transition-all duration-300 whitespace-nowrap"
                 >
                   Switch to {activeRole === USER_ROLES.OWNER ? 'Sitter' : 'Owner'}
                 </button>

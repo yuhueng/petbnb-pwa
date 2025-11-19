@@ -6,6 +6,8 @@ import RecommendationCard from '@/components/owner/RecommendationCard';
 import ListingDetailModal from '@/components/owner/ListingDetailModal';
 import ProfileModal from '@/components/common/ProfileModal';
 import { wishlistService } from '@/services/wishlistService';
+import { reviewService } from '@/services/reviewService';
+import { calculateDistance } from '@/utils/helpers';
 import toast from 'react-hot-toast';
 import RecommendationCard2 from '../../components/owner/RecommendationCard2';
 
@@ -33,6 +35,7 @@ const Explore = () => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [visibleGenericListings, setVisibleGenericListings] = useState(10);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [enrichedListings, setEnrichedListings] = useState([]);
 
   // Handle window resize for responsive behavior
   useEffect(() => {
@@ -69,6 +72,67 @@ const Explore = () => {
     const ids = await wishlistService.getWishlistIds(user.id);
     setWishlistIds(ids);
   };
+
+  // Enrich listings with review data and distance, then sort
+  useEffect(() => {
+    const enrichListings = async () => {
+      if (!listings || listings.length === 0) {
+        setEnrichedListings([]);
+        return;
+      }
+
+      try {
+        // Extract unique sitter IDs
+        const sitterIds = [...new Set(listings.map(listing => listing.sitter_id))];
+
+        // Fetch review statistics for all sitters
+        const reviewStatsMap = await reviewService.getBatchRatingStats(sitterIds);
+
+        // Get user's location (from profile)
+        const userLat = user?.latitude;
+        const userLon = user?.longitude;
+
+        // Enrich each listing with review data and distance
+        const enriched = listings.map(listing => {
+          const stats = reviewStatsMap.get(listing.sitter_id) || {
+            averageRating: 0,
+            totalReviews: 0,
+          };
+
+          // Calculate distance if both user and listing have coordinates
+          let distance = Infinity; // Default to infinity if no coordinates
+          if (userLat && userLon && listing.latitude && listing.longitude) {
+            distance = calculateDistance(userLat, userLon, listing.latitude, listing.longitude);
+          }
+
+          return {
+            ...listing,
+            averageRating: stats.averageRating,
+            totalReviews: stats.totalReviews,
+            distance,
+          };
+        });
+
+        // Sort by average rating (descending), then by distance (ascending)
+        enriched.sort((a, b) => {
+          // First, sort by average rating (higher is better)
+          if (b.averageRating !== a.averageRating) {
+            return b.averageRating - a.averageRating;
+          }
+          // If ratings are equal, sort by distance (closer is better)
+          return a.distance - b.distance;
+        });
+
+        setEnrichedListings(enriched);
+      } catch (error) {
+        console.error('Error enriching listings:', error);
+        // Fallback to original listings if enrichment fails
+        setEnrichedListings(listings);
+      }
+    };
+
+    enrichListings();
+  }, [listings, user]);
 
   // Handle AI-powered search
   // Handle search - now opens the search modal with pet filters
@@ -284,7 +348,7 @@ const Explore = () => {
 
   // Get recommended listings for a specific pet species
   const getRecommendationsForSpecies = (species, limit = 10) => {
-    const speciesListings = listings.filter(listing => {
+    const speciesListings = enrichedListings.filter(listing => {
       return listing.accepted_pet_types?.includes(species);
     });
     // Apply filters to species-specific listings
@@ -308,7 +372,7 @@ const Explore = () => {
   // Get generic listings (not including any pet-based recommendations)
   const getGenericListings = () => {
     const petRecommendationIds = getAllPetRecommendationIds();
-    const genericList = listings.filter(listing => !petRecommendationIds.has(listing.id));
+    const genericList = enrichedListings.filter(listing => !petRecommendationIds.has(listing.id));
     // Apply filters to generic listings
     return getFilteredListings(genericList);
   };
@@ -560,7 +624,7 @@ const Explore = () => {
               )}
 
               {/* Empty State */}
-              {listings.length === 0 && (
+              {enrichedListings.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20">
                   <svg
                     className="w-24 h-24 text-[#ababab] mb-4"

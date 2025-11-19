@@ -17,6 +17,7 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className, disable
   const [placesService, setPlacesService] = useState(null);
   const inputRef = useRef(null);
   const suggestionsRef = useRef(null);
+  const isSelectingRef = useRef(false); // Track if we're in the process of selecting
 
   // Initialize Google Maps API and services
   useEffect(() => {
@@ -62,8 +63,9 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className, disable
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // Use 'click' instead of 'mousedown' to allow suggestion clicks to register first
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   // Handle input change and fetch suggestions
@@ -117,6 +119,8 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className, disable
   const handleSelectSuggestion = (prediction) => {
     if (!placesService) return;
 
+    // Set flag to prevent blur handler from interfering
+    isSelectingRef.current = true;
     setIsLoading(true);
 
     // Get place details
@@ -148,6 +152,11 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className, disable
         const newToken = new window.google.maps.places.AutocompleteSessionToken();
         setSessionToken(newToken);
       }
+
+      // Reset the selecting flag after a brief delay
+      setTimeout(() => {
+        isSelectingRef.current = false;
+      }, 100);
     });
   };
 
@@ -155,6 +164,11 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className, disable
   const handleBlur = () => {
     // Delay to allow click on suggestion
     setTimeout(() => {
+      // Don't process blur if we're in the middle of selecting a suggestion
+      if (isSelectingRef.current) {
+        return;
+      }
+
       if (inputValue !== value) {
         // User typed but didn't select a suggestion
         if (onChange) {
@@ -205,7 +219,10 @@ const LocationAutocomplete = ({ value, onChange, placeholder, className, disable
             <button
               key={suggestion.place_id}
               type="button"
-              onClick={() => handleSelectSuggestion(suggestion)}
+              onMouseDown={(e) => {
+                e.preventDefault(); // Prevent blur from firing
+                handleSelectSuggestion(suggestion);
+              }}
               className="w-full px-4 py-3 text-left hover:bg-[#ffe5e5] transition-colors border-b border-gray-100 last:border-b-0 flex items-start gap-3"
             >
               <svg

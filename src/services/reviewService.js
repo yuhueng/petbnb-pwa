@@ -230,6 +230,66 @@ class ReviewService {
     console.log('✅ Sitter response added');
     return data;
   }
+
+  /**
+   * Get rating statistics for multiple sitters at once
+   * @param {string[]} sitterIds - Array of sitter IDs
+   * @returns {Promise<Map<string, {averageRating: number, totalReviews: number}>>}
+   */
+  async getBatchRatingStats(sitterIds) {
+    console.log('📊 Fetching rating stats for', sitterIds.length, 'sitters');
+
+    if (!sitterIds || sitterIds.length === 0) {
+      return new Map();
+    }
+
+    const { data: reviews, error } = await supabase
+      .from('reviews')
+      .select('sitter_id, rating')
+      .in('sitter_id', sitterIds)
+      .eq('is_visible', true);
+
+    if (error) {
+      console.error('❌ Failed to fetch batch rating stats:', error.message);
+      throw new Error(error.message);
+    }
+
+    // Group reviews by sitter_id and calculate stats
+    const statsMap = new Map();
+
+    // Initialize all sitters with zero stats
+    sitterIds.forEach(sitterId => {
+      statsMap.set(sitterId, {
+        averageRating: 0,
+        totalReviews: 0,
+      });
+    });
+
+    // Group reviews by sitter
+    const reviewsBySitter = {};
+    reviews.forEach(review => {
+      if (!reviewsBySitter[review.sitter_id]) {
+        reviewsBySitter[review.sitter_id] = [];
+      }
+      reviewsBySitter[review.sitter_id].push(review);
+    });
+
+    // Calculate stats for each sitter
+    Object.keys(reviewsBySitter).forEach(sitterId => {
+      const sitterReviews = reviewsBySitter[sitterId];
+      const averageRating = sitterReviews.length > 0
+        ? parseFloat((sitterReviews.reduce((sum, r) => sum + r.rating, 0) / sitterReviews.length).toFixed(1))
+        : 0;
+
+      statsMap.set(sitterId, {
+        averageRating,
+        totalReviews: sitterReviews.length,
+      });
+    });
+
+    console.log('✅ Batch rating stats calculated for', statsMap.size, 'sitters');
+    return statsMap;
+  }
 }
 
 // Export singleton instance

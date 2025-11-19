@@ -95,7 +95,7 @@ const Layout = () => {
             {/* Pet Zone - Between Logo and Button */}
             <div
               id="header-pet-zone"
-              className="relative flex flex-1 h-20 overflow-hidden"
+              className="relative  flex flex-1 h-20 overflow-hidden"
             >
               {/* Pet will roam here only */}
             </div>

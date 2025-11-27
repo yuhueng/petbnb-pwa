@@ -18,6 +18,8 @@ const Profile = () => {
   const [reviews, setReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({ averageRating: 0, totalReviews: 0 });
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [topTags, setTopTags] = useState([]);
+  const [loadingTags, setLoadingTags] = useState(false);
 
   // Profile edit state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -77,6 +79,27 @@ const Profile = () => {
       }
     };
     fetchReviews();
+  }, [showReviewsModal, user]);
+
+  // Fetch top tags when reviews modal opens
+  useEffect(() => {
+    const fetchTopTags = async () => {
+      if (showReviewsModal && user) {
+        setLoadingTags(true);
+        try {
+          const tagCounts = await reviewService.getSitterTagCounts(user.id);
+          // Get top 3 tags
+          const top3 = tagCounts.slice(0, 3);
+          setTopTags(top3);
+        } catch (error) {
+          console.error('Error fetching top tags:', error);
+          // Don't show error toast, just fail silently
+        } finally {
+          setLoadingTags(false);
+        }
+      }
+    };
+    fetchTopTags();
   }, [showReviewsModal, user]);
 
   // Initialize profile form when opening modal
@@ -710,6 +733,34 @@ const Profile = () => {
 
             {/* Content */}
             <div className="p-6">
+              {/* Top Qualities Section */}
+              {!loadingReviews && reviews.length > 0 && (loadingTags || topTags.length > 0) && (
+                <div className="mb-6 pb-6 border-b border-gray-200">
+                  <h4 className="text-lg font-semibold text-[#1d1a20] mb-3">Top Qualities</h4>
+                  {loadingTags ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#fb7678]"></div>
+                    </div>
+                  ) : topTags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {topTags.map((tagData) => (
+                        <div
+                          key={tagData.tag}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-[#fef5f6] border border-[#fb7678] rounded-full"
+                        >
+                          <span className="text-sm font-semibold text-[#fb7678]">
+                            {tagData.tag}
+                          </span>
+                          <span className="text-xs bg-[#fb7678] text-white rounded-full px-2 py-0.5 font-bold">
+                            {tagData.count}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
               {loadingReviews ? (
                 <div className="flex justify-center items-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb7678]"></div>
@@ -778,6 +829,20 @@ const Profile = () => {
                       {/* Review Comment */}
                       {review.comment && (
                         <p className="text-[#6d6d6d] text-sm leading-relaxed mb-3">{review.comment}</p>
+                      )}
+
+                      {/* Tags */}
+                      {review.tags && review.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {review.tags.map((tag, tagIndex) => (
+                            <span
+                              key={tagIndex}
+                              className="inline-block px-2 py-0.5 bg-white border border-[#fb7678] text-[#fb7678] rounded-full text-xs font-medium"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       )}
 
                       {/* Booking Info */}

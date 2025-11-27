@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore';
 import { usePetStore } from '@/store/petStore';
 import { chatService } from '@/services/chatService';
 import { bookingService } from '@/services/bookingService';
+import { reviewService } from '@/services/reviewService';
 import { supabase } from '@/services/supabase';
 import toast from 'react-hot-toast';
 
@@ -34,6 +35,8 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
     ],
   });
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [topTags, setTopTags] = useState([]);
+  const [loadingTags, setLoadingTags] = useState(false);
   const [bookingForm, setBookingForm] = useState({
     startDate: '',
     endDate: '',
@@ -116,6 +119,28 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
     };
 
     fetchReviews();
+  }, [isOpen, listing?.profiles?.id]);
+
+  // Fetch top tags for the sitter
+  useEffect(() => {
+    const fetchTopTags = async () => {
+      if (!isOpen || !listing?.profiles?.id) return;
+
+      setLoadingTags(true);
+      try {
+        const tagCounts = await reviewService.getSitterTagCounts(listing.profiles.id);
+        // Get top 3 tags
+        const top3 = tagCounts.slice(0, 3);
+        setTopTags(top3);
+      } catch (error) {
+        console.error('Error fetching top tags:', error);
+        // Don't show error toast, just fail silently
+      } finally {
+        setLoadingTags(false);
+      }
+    };
+
+    fetchTopTags();
   }, [isOpen, listing?.profiles?.id]);
 
   // Reset closing state when modal opens
@@ -589,6 +614,34 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
             </div>
           </div>
 
+          {/* Top Tags Section */}
+          {(loadingTags || topTags.length > 0) && (
+            <div className="p-5 border-b border-[#e9e9e9]">
+              <h3 className="text-lg font-semibold text-[#1d1a20] mb-3">Top Qualities</h3>
+              {loadingTags ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#fb7678]"></div>
+                </div>
+              ) : topTags.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {topTags.map((tagData, index) => (
+                    <div
+                      key={tagData.tag}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-[#fef5f6] border border-[#fb7678] rounded-full"
+                    >
+                      <span className="text-sm font-semibold text-[#fb7678]">
+                        {tagData.tag}
+                      </span>
+                      <span className="text-xs bg-[#fb7678] text-white rounded-full px-2 py-0.5 font-bold">
+                        {tagData.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          )}
+
           {/* 3. Reviews Section */}
           <div className="p-5 border-b border-[#e9e9e9]">
             <h3 className="text-lg font-semibold text-[#1d1a20] mb-4">Latest Reviews</h3>
@@ -625,9 +678,26 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
                     <div className="text-[#fb7678] text-xs mb-1.5 tracking-wide">
                       {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
                     </div>
-                    <p className="text-[13px] leading-relaxed text-[#494a50] line-clamp-3">
+                    {review.title && (
+                      <p className="text-sm font-semibold text-[#1d1a20] mb-1">
+                        {review.title}
+                      </p>
+                    )}
+                    <p className="text-[13px] leading-relaxed text-[#494a50] line-clamp-3 mb-2">
                       {review.comment}
                     </p>
+                    {review.tags && review.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {review.tags.map((tag, tagIndex) => (
+                          <span
+                            key={tagIndex}
+                            className="inline-block px-2 py-0.5 bg-white border border-[#fb7678] text-[#fb7678] rounded-full text-xs font-medium"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

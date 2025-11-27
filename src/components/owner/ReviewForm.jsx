@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import StarRating from '../common/StarRating';
 import TagSelector from '../common/TagSelector';
@@ -88,23 +88,23 @@ const ReviewForm = ({
   };
 
   return (
-    <div className="w-full max-w-[393px] mx-auto bg-white rounded-xl shadow-md p-4 transition-all duration-300 hover:shadow-lg">
+    <div className="w-full max-w-[600px] mx-auto bg-white rounded-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.15)] p-6">
       {/* Header Section */}
-      <div className="mb-6">
-        <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-2">
+      <div className="mb-5 border-b border-[#e9e9e9] pb-4">
+        <h2 className="text-xl font-bold text-[#1d1a20] mb-2">
           Review Your Experience
         </h2>
-        <p className="text-sm text-[var(--color-text-secondary)]">
-          with <span className="font-medium text-[var(--color-text-primary)]">{sitterName}</span>
+        <p className="text-sm text-[#494a50]">
+          with <span className="font-semibold text-[#1d1a20]">{sitterName}</span>
           {petNames && petNames.length > 0 && (
-             <span className="font-medium text-[var(--color-text-primary)]">caring for {petNames.join(', ')}</span>
+            <> caring for <span className="font-semibold text-[#1d1a20]">{petNames.join(', ')}</span></>
           )}
         </p>
       </div>
 
       {/* Star Rating Section */}
-      <div className="mb-6">
-        <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
+      <div className="mb-5">
+        <label className="block text-sm font-semibold text-[#494a50] mb-2">
           Overall Rating
         </label>
         <StarRating
@@ -116,7 +116,7 @@ const ReviewForm = ({
 
       {/* Review Title Section */}
       <div className="mb-4">
-        <label htmlFor="title" className="block text-sm font-semibold text-[var(--color-text-primary)] mb-1">
+        <label htmlFor="title" className="block text-sm font-semibold text-[#494a50] mb-2">
           Review Title
         </label>
         <input
@@ -125,17 +125,17 @@ const ReviewForm = ({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Summarize your experience in a few words"
-          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent transition-all duration-300"
+          className="w-full px-3 py-2 border border-[#e9e9e9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678] text-sm"
           maxLength={100}
         />
-        <p className="mt-1 text-xs text-[var(--color-text-tertiary)] text-right">
+        <p className="mt-1 text-xs text-[#6f6f6f] text-right">
           {title.length}/100 characters
         </p>
       </div>
 
       {/* Review Comment Section */}
       <div className="mb-4">
-        <label htmlFor="comment" className="block text-sm font-semibold text-[var(--color-text-primary)] mb-1">
+        <label htmlFor="comment" className="block text-sm font-semibold text-[#494a50] mb-2">
           Review Details
         </label>
         <textarea
@@ -144,17 +144,17 @@ const ReviewForm = ({
           onChange={(e) => setComment(e.target.value)}
           placeholder="Tell us more about your experience..."
           rows={5}
-          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent resize-none transition-all duration-300"
+          className="w-full px-3 py-2 border border-[#e9e9e9] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#fb7678] resize-none text-sm"
           maxLength={1000}
         />
-        <p className="mt-1 text-xs text-[var(--color-text-tertiary)] text-right">
+        <p className="mt-1 text-xs text-[#6f6f6f] text-right">
           {comment.length}/1000 characters
         </p>
       </div>
 
       {/* Tag Selector Section */}
       <div className="mb-4">
-        <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
+        <label className="block text-sm font-semibold text-[#494a50] mb-2">
           Select 3 Tags
         </label>
         <TagSelector
@@ -166,18 +166,18 @@ const ReviewForm = ({
 
       {/* Error Display */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+        <div className="mb-4 p-4 bg-[#fef5f6] border border-[#fb7678] rounded-lg text-sm text-[#fb7678]">
           {error}
         </div>
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+      <div className="flex gap-3 pt-4 border-t border-[#e9e9e9]">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] bg-[var(--color-bg-gray)] rounded-full hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-all duration-300"
+            className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-[15px] font-semibold hover:bg-gray-200 active:scale-98 transition-all"
           >
             Cancel
           </button>
@@ -186,7 +186,7 @@ const ReviewForm = ({
           type="submit"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="px-6 py-2 text-sm font-medium text-white bg-[var(--color-primary)] rounded-full hover:bg-[var(--color-primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+          className="flex-1 px-4 py-2 bg-[#fb7678] text-white rounded-lg text-[15px] font-semibold hover:bg-[#fa5d5f] active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? 'Submitting...' : 'Submit Review'}
         </button>

@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 
-// Predefined list of available review tags
+// Predefined list of available review tags (EXACTLY 10 tags)
+// These must match the database CHECK constraint
 export const AVAILABLE_REVIEW_TAGS = [
   'Patient',
   'Friendly',
@@ -11,12 +12,7 @@ export const AVAILABLE_REVIEW_TAGS = [
   'Experienced',
   'Trustworthy',
   'Attentive',
-  'Flexible',
-  'Responsible',
-  'Gentle',
-  'Professional',
-  'Loving',
-  'Detail-oriented'
+  'Professional'
 ];
 
 /**

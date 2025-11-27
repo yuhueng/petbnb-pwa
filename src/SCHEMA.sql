@@ -269,27 +269,34 @@ CREATE INDEX idx_messages_metadata ON messages USING GIN (metadata);
 CREATE TABLE reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
-  
+
   -- Reviewer and reviewee
   reviewer_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   sitter_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE, -- Only sitters get reviewed
-  
+
   -- Review content
   rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
   title TEXT,
   comment TEXT,
-  
+  tags TEXT[], -- Array of review tags (exactly 3 from allowed list)
+
   -- Response from sitter
   response TEXT,
   response_at TIMESTAMPTZ,
-  
+
   -- Metadata
   is_visible BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  
+
   -- Ensure one review per booking per reviewer
-  UNIQUE(booking_id, reviewer_id)
+  UNIQUE(booking_id, reviewer_id),
+
+  -- Validate tags: must be exactly 3, and from the allowed list
+  CONSTRAINT valid_review_tags CHECK (
+    array_length(tags, 1) = 3 AND
+    tags <@ ARRAY['Patient', 'Friendly', 'Reliable', 'Caring', 'Communicative', 'Punctual', 'Experienced', 'Trustworthy', 'Attentive', 'Professional']
+  )
 );
 
 CREATE INDEX idx_reviews_booking ON reviews(booking_id);

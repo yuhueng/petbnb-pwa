@@ -29,7 +29,7 @@ const Bookings = () => {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [bookingReviews, setBookingReviews] = useState(new Set());
 
-  // Track request cooldowns for spam prevention (15 minutes per type)
+  // Track request cooldowns for spam prevention (90 minutes per type)
   const [requestCooldowns, setRequestCooldowns] = useState({});
   const [recentRequests, setRecentRequests] = useState([]);
 
@@ -48,16 +48,16 @@ const Bookings = () => {
     }
   }, [isAuthenticated, user, fetchOwnerBookings]);
 
-  // Fetch recent requests from database (last 15 minutes)
+  // Fetch recent requests from database (last 90 minutes)
   const fetchRecentRequests = async (ownerId) => {
     try {
-      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      const ninetyMinutesAgo = new Date(Date.now() - 90 * 60 * 1000).toISOString();
 
       const { data, error } = await supabase
         .from('pet_care_requests')
         .select('*')
         .eq('pet_owner_id', ownerId)
-        .gte('created_at', fifteenMinutesAgo)
+        .gte('created_at', ninetyMinutesAgo)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -245,7 +245,7 @@ const Bookings = () => {
     setActivities([]);
   };
 
-  // Check if request is on cooldown (15 minutes) - checks both DB and client state
+  // Check if request is on cooldown (90 minutes) - checks both DB and client state
   const isRequestOnCooldown = (bookingId, requestType) => {
     // Check database records first (persistent across refreshes)
     const dbRequest = recentRequests.find(
@@ -254,8 +254,8 @@ const Bookings = () => {
 
     if (dbRequest) {
       const requestTime = new Date(dbRequest.created_at).getTime();
-      const fifteenMinutesAgo = Date.now() - (15 * 60 * 1000);
-      if (requestTime > fifteenMinutesAgo) {
+      const ninetyMinutesAgo = Date.now() - (90 * 60 * 1000);
+      if (requestTime > ninetyMinutesAgo) {
         return true;
       }
     }
@@ -266,8 +266,8 @@ const Bookings = () => {
 
     if (!lastRequestTime) return false;
 
-    const fifteenMinutesAgo = Date.now() - (15 * 60 * 1000);
-    return lastRequestTime > fifteenMinutesAgo;
+    const ninetyMinutesAgo = Date.now() - (90 * 60 * 1000);
+    return lastRequestTime > ninetyMinutesAgo;
   };
 
   // Get remaining cooldown time in minutes
@@ -295,8 +295,8 @@ const Bookings = () => {
     if (!lastRequestTime) return 0;
 
     const elapsed = Date.now() - lastRequestTime;
-    const fifteenMinutes = 15 * 60 * 1000;
-    const remaining = fifteenMinutes - elapsed;
+    const ninetyMinutes = 90 * 60 * 1000;
+    const remaining = ninetyMinutes - elapsed;
 
     return Math.ceil(remaining / 60000);
   };
@@ -703,7 +703,7 @@ const Bookings = () => {
                     Request photo updates from your sitter
                   </p>
                   <p className="text-[10px] text-white text-center opacity-90">
-                    (15min cooldown per type)
+                    (90min cooldown per type)
                   </p>
 
                 </div>
@@ -711,7 +711,7 @@ const Bookings = () => {
                 {/* Instructions */}
                 <div className="bg-white rounded-[10px] p-3 text-xs text-[#6d6d6d] shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)] mb-4">
                   <p className="font-semibold mb-1">💡 How it works:</p>
-                  <p>Tap a request card to send a message to your sitter asking for a photo update. Each request type has a 15-minute cooldown to prevent spam.</p>
+                  <p>Tap a request card to send a message to your sitter asking for a photo update. Each request type has a 90-minute cooldown to prevent spam.</p>
                 </div>
 
                 {/* Live Activity Timeline for selected booking */}

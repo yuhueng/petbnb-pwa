@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { AVAILABLE_REVIEW_TAGS } from '../../services/reviewService';
 
 const TagSelector = ({ selectedTags = [], onChange, maxSelections = 3 }) => {
   const [tags, setTags] = useState(selectedTags);
+
+  // Sync with parent component's selectedTags
+  useEffect(() => {
+    setTags(selectedTags);
+  }, [selectedTags]);
 
   const handleTagClick = (tag) => {
     let newTags;
@@ -31,10 +36,10 @@ const TagSelector = ({ selectedTags = [], onChange, maxSelections = 3 }) => {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-semibold text-[var(--color-text-primary)]">
-          Select {maxSelections} tags that describe your experience
-        </label>
-        <span className="text-xs text-[var(--color-text-tertiary)] bg-[var(--color-primary-softest)] px-2 py-1 rounded-full border border-[var(--color-primary)]">
+        <span className="text-xs text-[#6f6f6f]">
+          Select exactly {maxSelections} tags that describe your experience
+        </span>
+        <span className="text-xs bg-[#fef5f6] text-[#fb7678] px-2 py-1 rounded-full border border-[#fb7678] font-semibold">
           {tags.length}/{maxSelections}
         </span>
       </div>
@@ -49,12 +54,12 @@ const TagSelector = ({ selectedTags = [], onChange, maxSelections = 3 }) => {
               onClick={() => handleTagClick(tag)}
               disabled={!selected && !canSelectMore}
               className={`
-                px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border-2
+                px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border
                 ${selected
-                  ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm hover:bg-[var(--color-primary-hover)]'
+                  ? 'bg-[#fb7678] text-white border-[#fb7678] shadow-sm hover:bg-[#fa5d5f]'
                   : canSelectMore
-                    ? 'bg-white border-gray-300 text-[var(--color-text-primary)] hover:border-[var(--color-primary)] hover:bg-gray-50'
-                    : 'bg-[var(--color-bg-gray)] border-gray-200 text-[var(--color-text-light)] cursor-not-allowed'
+                    ? 'bg-white border-[#e9e9e9] text-[#494a50] hover:border-[#fb7678] hover:bg-[#fef5f6]'
+                    : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
                 }
               `}
               aria-label={`${selected ? 'Remove' : 'Add'} tag: ${tag}`}
@@ -67,7 +72,7 @@ const TagSelector = ({ selectedTags = [], onChange, maxSelections = 3 }) => {
       </div>
 
       {!canSelectMore && (
-        <p className="text-xs text-[var(--color-text-secondary)] p-2 bg-[var(--color-primary-softest)] border-l-3 border-[var(--color-primary)] rounded">
+        <p className="text-xs text-[#494a50] p-2 bg-[#fef5f6] border-l-4 border-[#fb7678] rounded">
           Maximum of {maxSelections} tags selected. Remove a tag to select a different one.
         </p>
       )}

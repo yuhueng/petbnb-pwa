@@ -131,7 +131,7 @@ class ChatService {
 
     console.log(`✅ Found ${conversations.length} conversations`);
 
-    // For each conversation, get the other participant's profile, last message, and unread count
+    // For each conversation, get the other participant's profile, last message, unread count, and current booking status
     const enrichedConversations = await Promise.all(
       conversations.map(async (conv) => {
         // Determine the other participant
@@ -157,6 +157,21 @@ class ChatService {
           .limit(1)
           .maybeSingle();
 
+        // Check for current booking (confirmed or in_progress status with current/future dates)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const { data: currentBooking } = await supabase
+          .from('bookings')
+          .select('id, status, start_date, end_date')
+          .eq('pet_owner_id', conv.pet_owner_id)
+          .eq('pet_sitter_id', conv.pet_sitter_id)
+          .in('status', ['confirmed', 'in_progress'])
+          .gte('end_date', today.toISOString())
+          .order('start_date', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
         // No unread count tracking
         return {
           id: conv.id,
@@ -166,11 +181,22 @@ class ChatService {
           },
           lastMessage: lastMessageData || null,
           unreadCount: 0, // Always 0 - no tracking
+          hasCurrentBooking: !!currentBooking, // True if there's an active booking
           updated_at: conv.updated_at,
           created_at: conv.created_at,
         };
       })
     );
+
+    // Sort conversations: current bookings first, then by updated_at
+    enrichedConversations.sort((a, b) => {
+      // Pin conversations with current bookings to the top
+      if (a.hasCurrentBooking && !b.hasCurrentBooking) return -1;
+      if (!a.hasCurrentBooking && b.hasCurrentBooking) return 1;
+
+      // Then sort by updated_at
+      return new Date(b.updated_at) - new Date(a.updated_at);
+    });
 
     return enrichedConversations;
   }

@@ -129,7 +129,7 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
   return (
     <div className="divide-y divide-gray-100">
       {conversations.map((conversation) => {
-        const { id, otherParticipant, lastMessage, unreadCount } = conversation;
+        const { id, otherParticipant, lastMessage, unreadCount, hasCurrentBooking } = conversation;
         const isSelected = id === selectedConversationId;
 
         return (
@@ -161,17 +161,22 @@ const ConversationList = ({ conversations, onSelectConversation, selectedConvers
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
                     <p className="text-sm font-bold text-[#3e2d2e] truncate">
                       {otherParticipant?.name}
                     </p>
                     {otherParticipant?.role && (
                       <span className={`flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${
                         otherParticipant.role === 'sitter'
-                          ? 'bg-gradient-to-r from-[#ffe5e5] to-[#fcf3f3] text-[#fb7678]'
-                          : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700'
+                          ? 'bg-gradient-to-r from-[#ffe5e5] to-[#fcf3f3] text-[#fb7678] border border-[#fb7678]-300'
+                          : 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-300'
                       }`}>
                         {otherParticipant.role === 'sitter' ? 'Pet Sitter' : 'Pet Owner'}
+                      </span>
+                    )}
+                    {hasCurrentBooking && (
+                      <span className="flex-shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 border border-blue-300">
+                        Current
                       </span>
                     )}
                   </div>

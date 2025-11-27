@@ -198,6 +198,10 @@ const ChatInterface = ({
             const isBookingRequest = message.metadata &&
               (message.metadata.type === 'booking_request' || message.metadata.bookingId);
 
+            // Check if this is a system-generated pet care request
+            const isSystemGenerated = message.metadata &&
+              message.metadata.is_system_generated === true;
+
             // If it's a booking request, render BookingRequestCard
             if (isBookingRequest && message.metadata.bookingId) {
               return (
@@ -247,7 +251,9 @@ const ChatInterface = ({
                   <div>
                     <div
                       className={`rounded-2xl overflow-hidden shadow-sm ${
-                        isOwn
+                        isSystemGenerated
+                          ? 'bg-gradient-to-r from-[#ffc369] to-[#ffb347] text-[#3e2d2e] border-2 border-dashed border-[#ff9f00]'
+                          : isOwn
                           ? 'bg-gradient-to-r from-[#fb7678] to-[#ffa8aa] text-white'
                           : 'bg-white text-[#3e2d2e] border border-gray-200'
                       }`}
@@ -301,7 +307,9 @@ const ChatInterface = ({
 
                       {/* Text content */}
                       {message.content && (
-                        <p className={`text-sm whitespace-pre-wrap break-words ${message.attachment_url ? 'px-4 pb-3' : 'px-4 py-3'}`}>
+                        <p className={`text-sm whitespace-pre-wrap break-words ${
+                          isSystemGenerated ? 'font-semibold' : ''
+                        } ${message.attachment_url ? 'px-4 pb-3' : 'px-4 py-3'}`}>
                           {message.content}
                         </p>
                       )}

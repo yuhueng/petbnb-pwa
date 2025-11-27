@@ -386,6 +386,43 @@ const Dashboard = () => {
       const result = await petActivityService.createActivity(activityData);
 
       if (result.success) {
+        // Send SYSTEM GENERATED message to owner about the activity
+        try {
+          const conversation = await chatService.getOrCreateConversationExplicit(
+            booking.pet_owner_id,
+            user.id
+          );
+
+          const activityEmojis = {
+            walk: '🚶',
+            feed: '🍽️',
+            play: '🎾'
+          };
+
+          const activityLabels = {
+            walk: 'Walk',
+            feed: 'Feeding',
+            play: 'Playtime'
+          };
+
+          const systemMessage = `🤖 SYSTEM GENERATED UPDATE\n\n${activityEmojis[selectedActivity]} ${activityLabels[selectedActivity]} Activity Logged\n\n📝 Details: ${activityAnswer}\n📸 ${uploadResult.urls.length} photo${uploadResult.urls.length > 1 ? 's' : ''} uploaded\n\nCheck the timeline for updates! 🐾`;
+
+          await chatService.sendMessage({
+            conversationId: conversation.id,
+            senderId: user.id,
+            content: systemMessage,
+            metadata: {
+              type: 'pet_activity_update',
+              booking_id: booking.id,
+              activity_type: selectedActivity,
+              is_system_generated: true,
+            },
+          });
+        } catch (msgError) {
+          console.error('Failed to send activity notification:', msgError);
+          // Don't fail the whole operation if message fails
+        }
+
         // Close activity modal
         setActivityModalOpen(false);
         setActivityModalStep(1);
@@ -459,37 +496,37 @@ const Dashboard = () => {
     }
   };
 
-  // Get status badge
+  // Get status badge - simplified style matching owner's page
   const getStatusBadge = (status) => {
     switch (status) {
       case 'confirmed':
         return (
-          <span className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs rounded-full font-semibold shadow-sm">
-            ✓ Confirmed
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-[#fb7678] text-white">
+            confirmed
           </span>
         );
       case 'pending':
         return (
-          <span className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs rounded-full font-semibold shadow-sm">
-            ⏱ Pending
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-amber-500 text-white">
+            pending
           </span>
         );
       case 'in_progress':
         return (
-          <span className="px-3 py-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs rounded-full font-semibold shadow-sm">
-            🔵 In Progress
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-500 text-white">
+            in progress
           </span>
         );
       case 'completed':
         return (
-          <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full font-semibold shadow-sm">
-            ✔ Completed
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-[#fb7678] text-white">
+            completed
           </span>
         );
       case 'cancelled':
         return (
-          <span className="px-3 py-1 bg-gradient-to-r from-red-500 to-rose-500 text-white text-xs rounded-full font-semibold shadow-sm">
-            ✗ Cancelled
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-[#d9d9d9] text-[#6d6d6d]">
+            cancelled
           </span>
         );
       default:
@@ -1183,69 +1220,54 @@ const Dashboard = () => {
                   Past Bookings ({pastBookings.length})
                 </h2>
                 {pastBookings.map(booking => (
-                  <div key={booking.id}
-                       onClick={() => handlePastBookingClick(booking)}
-                       className="bg-white rounded-[10px] p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
-                    <div className="flex gap-3">
-                      {/* Pet Image/Icon */}
-                      <div className="w-[74px] h-[70px] rounded-[10px] bg-gradient-to-br from-[#fb7678]/50 to-[#ffa8aa]/50 flex items-center justify-center text-3xl flex-shrink-0">
-                        🐶
+                  <article
+                    key={booking.id}
+                    className="bg-white rounded-[10px] shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)] p-3 sm:p-4 mb-3"
+                  >
+                    {/* Header with Owner Info */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        {booking.owner?.avatar_url ? (
+                          <img
+                            src={booking.owner.avatar_url}
+                            alt={booking.owner.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-white font-bold">
+                            {booking.owner?.name?.charAt(0).toUpperCase() || 'O'}
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-bold text-sm text-[#3e2d2e]">{booking.owner?.name || 'Owner'}</h3>
+                          <p className="text-xs text-[#6d6d6d]">{booking.listing?.title || 'Pet Sitting Service'}</p>
+                        </div>
                       </div>
+                      {getStatusBadge(booking.status)}
+                    </div>
 
-                      {/* Booking Info */}
-                      <div className="flex-1 flex flex-col">
-                        {/* Title and Status */}
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium text-black leading-normal">
-                              {booking.listing?.title || 'Pet Sitting Service'}
-                            </p>
-                            {getStatusBadge(booking.status)}
-                          </div>
-                          <p className="text-[10px] font-light text-[#535353] leading-normal">
-                            {new Date(booking.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(booking.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </p>
-                          <div className="h-px bg-[#e5e5e5] my-1"></div>
-                        </div>
-
-                        {/* Owner and Price */}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            {booking.owner?.avatar_url ? (
-                              <img
-                                src={booking.owner.avatar_url}
-                                alt={booking.owner.name}
-                                className="w-[27px] h-[27px] rounded-full object-cover border border-gray-200 flex-shrink-0"
-                              />
-                            ) : (
-                              <div className="w-[27px] h-[27px] rounded-full bg-gradient-to-br from-[#ffd189] to-[#ffb347] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
-                                {booking.owner?.name?.charAt(0).toUpperCase() || 'O'}
-                              </div>
-                            )}
-                            <p className="text-xs font-medium text-black leading-normal">
-                              {booking.owner?.name || 'Owner'}
-                            </p>
-                          </div>
-
-                          {booking.total_price && (
-                            <span className="text-sm font-bold text-[#3e2d2e]">
-                              ${(booking.total_price / 100).toFixed(2)}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* View Timeline Button */}
-                        <div className="mt-2">
-                          <div className="flex items-center gap-1 text-[#fb7678] text-xs font-semibold">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>View Timeline</span>
-                          </div>
-                        </div>
+                    {/* Date Range */}
+                    <div className="bg-[#fef5f6] rounded-[10px] p-2 mb-3">
+                      <div className="flex items-center text-xs text-[#6d6d6d]">
+                        <img src="/icons/common/calendar-icon.svg" alt="Calendar" className="w-4 h-4 mr-2" />
+                        <span className="font-semibold">
+                          {new Date(booking.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {' - '}
+                          {new Date(booking.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
                       </div>
                     </div>
-                  </div>
+
+                    {/* Action Button */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handlePastBookingClick(booking)}
+                        className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-[10px] font-semibold text-sm hover:bg-gray-200 transition-colors"
+                      >
+                        View Timeline
+                      </button>
+                    </div>
+                  </article>
                 ))}
               </div>
             )}
@@ -1733,8 +1755,10 @@ const Dashboard = () => {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h2 className="text-base font-bold text-[#3e2d2e] mb-1">
-                        {selectedPastBooking.listing?.title || 'Pet Sitting Service'} - Timeline
+                        {selectedPastBooking.listing?.title || 'Pet Sitting Service'}
                       </h2>
+                      <h2 className="text-base font-bold text-[#3e2d2e] mb-1">Timeline</h2>
+
                       <p className="text-base font-semibold text-[#fe8c85]">
                         {new Date(selectedPastBooking.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {new Date(selectedPastBooking.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                       </p>
@@ -1744,7 +1768,7 @@ const Dashboard = () => {
                         e.stopPropagation();
                         handleGoToChat(selectedPastBooking);
                       }}
-                      className="px-3 py-2 bg-[#fb7678] hover:bg-[#fa6568] rounded-[15px] transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                      className="px-3 py-2 mx-6 bg-[#fb7678] hover:bg-[#fa6568] rounded-[15px] transition-all duration-300 hover:scale-105 flex items-center gap-2"
                     >
                       <span className="text-xs font-bold text-white whitespace-nowrap">💬 Message</span>
                     </button>

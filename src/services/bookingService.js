@@ -268,13 +268,18 @@ class BookingService {
     // Update booking status
     const booking = await this.updateBookingStatus(bookingId, 'confirmed');
 
-    // Send confirmation message to owner
-    const confirmMessage = `🎉 Great news! Your booking request has been accepted!\n\n📅 Dates: ${new Date(booking.start_date).toLocaleDateString()} - ${new Date(booking.end_date).toLocaleDateString()}\n🏠 Service: ${booking.listing.title}\n\nLooking forward to caring for your pet!`;
+    // Send SYSTEM GENERATED confirmation message to owner
+    const confirmMessage = `🤖 SYSTEM GENERATED NOTIFICATION\n\n🎉 Booking Accepted!\n\n📅 Dates: ${new Date(booking.start_date).toLocaleDateString()} - ${new Date(booking.end_date).toLocaleDateString()}\n🏠 Service: ${booking.listing.title}\n\nNote: You may request for updates in your bookings tab through PET CARE REQUEST!\n\nYour sitter has confirmed your booking. Looking forward to caring for your pet! 🐾`;
 
     await chatService.sendMessage({
       conversationId,
       senderId: sitterId,
       content: confirmMessage,
+      metadata: {
+        type: 'booking_acceptance',
+        booking_id: bookingId,
+        is_system_generated: true,
+      },
     });
 
     return booking;
@@ -291,13 +296,18 @@ class BookingService {
       cancellation_reason: reason,
     });
 
-    // Send decline message to owner
-    const declineMessage = `Sorry, I'm unable to accept your booking request for ${new Date(booking.start_date).toLocaleDateString()} - ${new Date(booking.end_date).toLocaleDateString()}.${reason ? `\n\nReason: ${reason}` : ''}`;
+    // Send SYSTEM GENERATED decline message to owner
+    const declineMessage = `🤖 SYSTEM GENERATED NOTIFICATION\n\n❌ Booking Declined\n\n📅 Dates: ${new Date(booking.start_date).toLocaleDateString()} - ${new Date(booking.end_date).toLocaleDateString()}\n\nUnfortunately, your sitter is unable to accept this booking request.${reason ? `\n\n📝 Reason: ${reason}` : ''}`;
 
     await chatService.sendMessage({
       conversationId,
       senderId: sitterId,
       content: declineMessage,
+      metadata: {
+        type: 'booking_decline',
+        booking_id: bookingId,
+        is_system_generated: true,
+      },
     });
 
     return booking;

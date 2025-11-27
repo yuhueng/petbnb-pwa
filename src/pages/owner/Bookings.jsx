@@ -340,8 +340,20 @@ const Bookings = () => {
         booking.pet_sitter_id
       );
 
-      // Send message requesting photo
-      const requestMessage = `Hi! Could you please share a photo of ${requestType === 'walk' ? 'the walk' : requestType === 'feed' ? 'feeding time' : 'playtime'}? Thank you! 🐾`;
+      // Send SYSTEM GENERATED message requesting photo
+      const activityEmojis = {
+        walk: '🚶',
+        feed: '🍽️',
+        play: '🎾'
+      };
+
+      const activityLabels = {
+        walk: 'Walk Update',
+        feed: 'Feeding Update',
+        play: 'Playtime Update'
+      };
+
+      const requestMessage = `🤖 SYSTEM GENERATED REQUEST\n\n${activityEmojis[requestType]} ${activityLabels[requestType]} Requested\n\nPlease share a photo of ${requestType === 'walk' ? 'the walk' : requestType === 'feed' ? 'feeding time' : 'playtime'}. Thank you! 🐾`;
 
       const { data: message, error: messageError } = await supabase
         .from('messages')
@@ -353,6 +365,7 @@ const Bookings = () => {
             type: 'pet_care_request',
             booking_id: booking.id,
             request_type: requestType,
+            is_system_generated: true,
           },
         })
         .select()
@@ -383,7 +396,7 @@ const Bookings = () => {
       // Refresh recent requests from database
       await fetchRecentRequests(user.id);
 
-      alert(`${requestType.charAt(0).toUpperCase() + requestType.slice(1)} photo request sent successfully!`);
+      alert(`✅ ${activityLabels[requestType]} request sent successfully!\n\nA system-generated message has been sent to your sitter.`);
     } catch (error) {
       console.error('Error sending request:', error);
       alert('Failed to send request. Please try again.');

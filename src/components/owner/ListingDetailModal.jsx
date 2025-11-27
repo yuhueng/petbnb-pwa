@@ -306,8 +306,8 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
           profiles.id
         );
 
-        // Send booking request message to sitter
-        const bookingMessage = `📋 New Booking Request\n\n📅 Dates: ${new Date(bookingForm.startDate).toLocaleDateString()} - ${new Date(bookingForm.endDate).toLocaleDateString()}\n🏠 Service: ${listing.title}\n🐾 Pets: ${petNames}\n💰 Total: $${(totalPrice / 100).toFixed(2)}${bookingForm.specialRequests ? `\n\n📝 Special Requests: ${bookingForm.specialRequests}` : ''}\n\nPlease review and respond to this booking request.`;
+        // Send SYSTEM GENERATED booking request message to sitter
+        const bookingMessage = `🤖 SYSTEM GENERATED REQUEST\n\n📋 New Booking Request\n\n📅 Dates: ${new Date(bookingForm.startDate).toLocaleDateString()} - ${new Date(bookingForm.endDate).toLocaleDateString()}\n🏠 Service: ${listing.title}\n🐾 Pets: ${petNames}\n💰 Total: $${(totalPrice / 100).toFixed(2)}${bookingForm.specialRequests ? `\n\n📝 Special Requests: ${bookingForm.specialRequests}` : ''}\n\nPlease review and respond to this booking request.`;
 
         await chatService.sendMessage({
           conversationId: conversation.id,
@@ -320,6 +320,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onProfileClick }) => {
             start_date: bookingForm.startDate,
             end_date: bookingForm.endDate,
             total_price: totalPrice,
+            is_system_generated: true,
           },
         });
 

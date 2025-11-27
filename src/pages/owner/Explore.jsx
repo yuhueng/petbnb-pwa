@@ -501,7 +501,7 @@ const Explore = () => {
                   <div key={species} className="mb-6">
                     <div className="flex items-center justify-between mb-3">
                       <h2 className="text-base font-bold text-[#3e2d2e] font-['Inter']">
-                        [Web Experiment] Recommended for {petNames}
+                        Recommended for {petNames}
                       </h2>
 
                       {/* Desktop Arrow Navigation */}
@@ -559,7 +559,7 @@ const Explore = () => {
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-base font-bold text-[#3e2d2e] font-['Inter']">
-                      More Pet Sitters Near You
+                      [Test Web Exeriment] More Pet Sitters Near You
                     </h2>
 
                     {/* Desktop Arrow Navigation */}

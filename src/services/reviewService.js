@@ -1,5 +1,24 @@
 import { supabase } from './supabase';
 
+// Predefined list of available review tags
+export const AVAILABLE_REVIEW_TAGS = [
+  'Patient',
+  'Friendly',
+  'Reliable',
+  'Caring',
+  'Communicative',
+  'Punctual',
+  'Experienced',
+  'Trustworthy',
+  'Attentive',
+  'Flexible',
+  'Responsible',
+  'Gentle',
+  'Professional',
+  'Loving',
+  'Detail-oriented'
+];
+
 /**
  * Review Service
  * Handles review-related database operations
@@ -136,7 +155,7 @@ class ReviewService {
 
   /**
    * Create a new review
-   * @param {Object} reviewData - Review data (booking_id, reviewer_id, sitter_id, rating, title, comment)
+   * @param {Object} reviewData - Review data (booking_id, reviewer_id, sitter_id, rating, title, comment, tags)
    * @returns {Promise<Object>} Created review
    */
   async createReview(reviewData) {
@@ -289,6 +308,70 @@ class ReviewService {
 
     console.log('✅ Batch rating stats calculated for', statsMap.size, 'sitters');
     return statsMap;
+  }
+
+  /**
+   * Get all unique tags used in reviews for a sitter with counts
+   * @param {string} sitterId - Sitter ID
+   * @returns {Promise<Array>} Array of tags with usage counts
+   */
+  async getSitterTagCounts(sitterId) {
+    console.log('🏷️ Fetching tag counts for sitter:', sitterId);
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('tags')
+      .eq('sitter_id', sitterId)
+      .eq('is_visible', true);
+
+    if (error) {
+      console.error('❌ Failed to fetch sitter tags:', error.message);
+      throw new Error(error.message);
+    }
+
+    // Count tag occurrences
+    const tagCounts = {};
+    (data || []).forEach(review => {
+      if (review.tags) {
+        review.tags.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+      }
+    });
+
+    // Convert to array and sort by count
+    const tagArray = Object.entries(tagCounts)
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count);
+
+    console.log('✅ Fetched', tagArray.length, 'unique tags for sitter');
+    return tagArray;
+  }
+
+  /**
+   * Check if a review exists for a booking
+   * @param {string} bookingId - Booking ID
+   * @param {string} reviewerId - Reviewer ID
+   * @returns {Promise<boolean>} Whether review exists
+   */
+  async checkReviewExists(bookingId, reviewerId) {
+    console.log('🔍 Checking if review exists for booking:', bookingId);
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('booking_id', bookingId)
+      .eq('reviewer_id', reviewerId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+      console.error('❌ Failed to check review existence:', error.message);
+      throw new Error(error.message);
+    }
+
+    const exists = !error && data;
+    console.log('✅ Review exists:', exists);
+    return exists;
   }
 }
 

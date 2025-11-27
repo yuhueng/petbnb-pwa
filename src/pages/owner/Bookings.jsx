@@ -4,6 +4,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { supabase } from '@/services/supabase';
 import { chatService } from '@/services/chatService';
+import { reviewService } from '@/services/reviewService';
+import ReviewForm from '@/components/owner/ReviewForm';
 
 /**
  * Owner's Bookings Page
@@ -22,6 +24,11 @@ const Bookings = () => {
   const [selectedBookingForTimeline, setSelectedBookingForTimeline] = useState(null);
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
 
+  // Review form state
+  const [selectedBookingForReview, setSelectedBookingForReview] = useState(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [bookingReviews, setBookingReviews] = useState(new Set());
+
   // Track request cooldowns for spam prevention (15 minutes per type)
   const [requestCooldowns, setRequestCooldowns] = useState({});
   const [recentRequests, setRecentRequests] = useState([]);
@@ -37,6 +44,7 @@ const Bookings = () => {
     if (isAuthenticated && user) {
       fetchOwnerBookings(user.id);
       fetchRecentRequests(user.id);
+      fetchBookingReviews(user.id);
     }
   }, [isAuthenticated, user, fetchOwnerBookings]);
 
@@ -59,6 +67,48 @@ const Bookings = () => {
       console.error('Error fetching recent requests:', error);
       setRecentRequests([]);
     }
+  };
+
+  // Fetch reviews for past bookings
+  const fetchBookingReviews = async (ownerId) => {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('booking_id')
+        .eq('reviewer_id', ownerId);
+
+      if (error) throw error;
+
+      const reviewBookingIds = new Set((data || []).map(r => r.booking_id));
+      setBookingReviews(reviewBookingIds);
+    } catch (error) {
+      console.error('Error fetching booking reviews:', error);
+      setBookingReviews(new Set());
+    }
+  };
+
+  // Handle review submission
+  const handleReviewSubmitted = () => {
+    setIsReviewModalOpen(false);
+    setSelectedBookingForReview(null);
+
+    // Refresh reviews and bookings
+    if (user) {
+      fetchBookingReviews(user.id);
+      fetchOwnerBookings(user.id);
+    }
+  };
+
+  // Handle opening review form
+  const handleOpenReviewForm = (booking) => {
+    setSelectedBookingForReview(booking);
+    setIsReviewModalOpen(true);
+  };
+
+  // Handle closing review form
+  const handleCloseReviewForm = () => {
+    setIsReviewModalOpen(false);
+    setSelectedBookingForReview(null);
   };
 
   // Refresh bookings when page gains focus
@@ -117,6 +167,7 @@ const Bookings = () => {
       );
     });
 
+    
     return { currentBookings: current, upcomingBookings: upcoming, pastBookings: past };
   }, [bookings]);
 
@@ -806,59 +857,79 @@ const Bookings = () => {
               </div>
             ) : (
               <div>
-                {pastBookings.map(booking => (
-                  <article
-                    key={booking.id}
-                    className="bg-white rounded-[10px] shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)] p-3 sm:p-4 mb-3"
-                  >
-                    {/* Header with Sitter Info */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        {booking.sitter?.avatar_url ? (
-                          <img
-                            src={booking.sitter.avatar_url}
-                            alt={booking.sitter.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-white font-bold">
-                            {booking.sitter?.name?.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <h3 className="font-bold text-sm text-[#3e2d2e]">{booking.sitter?.name}</h3>
-                          <p className="text-xs text-[#6d6d6d]">{booking.listing?.title}</p>
-                        </div>
-                      </div>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        booking.status === 'completed' ? 'bg-[#fb7678] text-white' :
-                        'bg-[#d9d9d9] text-[#6d6d6d]'
-                      }`}>
-                        {booking.status}
-                      </span>
-                    </div>
+                {pastBookings.map(booking => {
+                  const hasReview = bookingReviews.has(booking.id);
+                  const isCompleted = booking.status === 'completed';
 
-                    {/* Date Range */}
-                    <div className="bg-[#fef5f6] rounded-[10px] p-2 mb-3">
-                      <div className="flex items-center text-xs text-[#6d6d6d]">
-                        <img src="/icons/common/calendar-icon.svg" alt="Calendar" className="w-4 h-4 mr-2" />
-                        <span className="font-semibold">
-                          {new Date(booking.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          {' - '}
-                          {new Date(booking.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  return (
+                    <article
+                      key={booking.id}
+                      className="bg-white rounded-[10px] shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)] p-3 sm:p-4 mb-3"
+                    >
+                      {/* Header with Sitter Info */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          {booking.sitter?.avatar_url ? (
+                            <img
+                              src={booking.sitter.avatar_url}
+                              alt={booking.sitter.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#fb7678] to-[#ffa8aa] flex items-center justify-center text-white font-bold">
+                              {booking.sitter?.name?.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="font-bold text-sm text-[#3e2d2e]">{booking.sitter?.name}</h3>
+                            <p className="text-xs text-[#6d6d6d]">{booking.listing?.title}</p>
+                          </div>
+                        </div>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          booking.status === 'completed' ? 'bg-[#fb7678] text-white' :
+                          'bg-[#d9d9d9] text-[#6d6d6d]'
+                        }`}>
+                          {booking.status}
                         </span>
                       </div>
-                    </div>
 
-                    {/* View Timeline Button */}
-                    <button
-                      onClick={() => handleViewTimeline(booking)}
-                      className="w-full px-4 py-2 bg-[#fb7678] text-white rounded-[10px] font-semibold text-sm hover:bg-[#fa6567] transition-colors"
-                    >
-                      View Timeline
-                    </button>
-                  </article>
-                ))}
+                      {/* Date Range */}
+                      <div className="bg-[#fef5f6] rounded-[10px] p-2 mb-3">
+                        <div className="flex items-center text-xs text-[#6d6d6d]">
+                          <img src="/icons/common/calendar-icon.svg" alt="Calendar" className="w-4 h-4 mr-2" />
+                          <span className="font-semibold">
+                            {new Date(booking.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {' - '}
+                            {new Date(booking.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleViewTimeline(booking)}
+                          className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-[10px] font-semibold text-sm hover:bg-gray-200 transition-colors"
+                        >
+                          View Timeline
+                        </button>
+                        {isCompleted && !hasReview && (
+                          <button
+                            onClick={() => handleOpenReviewForm(booking)}
+                            className="flex-1 px-4 py-2 bg-[#fb7678] text-white rounded-[10px] font-semibold text-sm hover:bg-[#fa6567] transition-colors"
+                          >
+                            Write Review
+                          </button>
+                        )}
+                        {hasReview && (
+                          <div className="flex-1 px-4 py-2 bg-green-100 text-green-700 rounded-[10px] text-sm font-semibold text-center">
+                            ✓ Reviewed
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -993,6 +1064,42 @@ const Bookings = () => {
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Review Modal */}
+        {isReviewModalOpen && selectedBookingForReview && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-60 transition-opacity backdrop-blur-sm"
+              onClick={handleCloseReviewForm}
+            />
+
+            {/* Modal */}
+            <div className="flex min-h-full items-center justify-center p-4">
+              <div className="relative bg-white rounded-[20px] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Close Button */}
+                <button
+                  onClick={handleCloseReviewForm}
+                  className="absolute top-4 right-4 z-10 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+                >
+                  <svg className="w-5 h-5 text-[#6d6d6d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                <ReviewForm
+                  bookingId={selectedBookingForReview.id}
+                  sitterId={selectedBookingForReview.pet_sitter_id}
+                  reviewerId={user?.id}
+                  sitterName={selectedBookingForReview.sitter?.name}
+                  petNames={selectedBookingForReview.pets?.map(pet => pet.name)}
+                  onReviewSubmitted={handleReviewSubmitted}
+                  onCancel={handleCloseReviewForm}
+                />
               </div>
             </div>
           </div>

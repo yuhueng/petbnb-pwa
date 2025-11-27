@@ -559,7 +559,7 @@ const Explore = () => {
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-base font-bold text-[#3e2d2e] font-['Inter']">
-                      [Test Web Exeriment] More Pet Sitters Near You
+                      More Pet Sitters Near You
                     </h2>
 
                     {/* Desktop Arrow Navigation */}

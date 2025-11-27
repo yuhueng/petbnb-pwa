@@ -269,7 +269,7 @@ class BookingService {
     const booking = await this.updateBookingStatus(bookingId, 'confirmed');
 
     // Send SYSTEM GENERATED confirmation message to owner
-    const confirmMessage = `🤖 SYSTEM GENERATED NOTIFICATION\n\n🎉 Booking Accepted!\n\n📅 Dates: ${new Date(booking.start_date).toLocaleDateString()} - ${new Date(booking.end_date).toLocaleDateString()}\n🏠 Service: ${booking.listing.title}\n\nNote: You may request for updates in your bookings tab through PET CARE REQUEST!\n\nYour sitter has confirmed your booking. Looking forward to caring for your pet! 🐾`;
+    const confirmMessage = `🤖 SYSTEM GENERATED NOTIFICATION\n\n🎉 Booking Accepted!\n\n📅 Dates: ${new Date(booking.start_date).toLocaleDateString()} - ${new Date(booking.end_date).toLocaleDateString()}\n🏠 Service: ${booking.listing.title}\n\nYour sitter has confirmed your booking. Looking forward to caring for your pet! 🐾`;
 
     await chatService.sendMessage({
       conversationId,

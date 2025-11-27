@@ -29,45 +29,14 @@ const Bookings = () => {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [bookingReviews, setBookingReviews] = useState(new Set());
 
-  // Track request cooldowns for spam prevention (90 minutes per type)
-  const [requestCooldowns, setRequestCooldowns] = useState({});
-  const [recentRequests, setRecentRequests] = useState([]);
-
-  // Current bookings activities (for live timeline in Current tab)
-  const [currentBookingActivities, setCurrentBookingActivities] = useState([]);
-
-  // Toggle state for current bookings view (null = show all cards, bookingId = show that booking's timeline)
-  const [selectedCurrentBooking, setSelectedCurrentBooking] = useState(null);
 
   // Fetch owner bookings on mount
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchOwnerBookings(user.id);
-      fetchRecentRequests(user.id);
       fetchBookingReviews(user.id);
     }
   }, [isAuthenticated, user, fetchOwnerBookings]);
-
-  // Fetch recent requests from database (last 90 minutes)
-  const fetchRecentRequests = async (ownerId) => {
-    try {
-      const ninetyMinutesAgo = new Date(Date.now() - 90 * 60 * 1000).toISOString();
-
-      const { data, error } = await supabase
-        .from('pet_care_requests')
-        .select('*')
-        .eq('pet_owner_id', ownerId)
-        .gte('created_at', ninetyMinutesAgo)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setRecentRequests(data || []);
-    } catch (error) {
-      console.error('Error fetching recent requests:', error);
-      setRecentRequests([]);
-    }
-  };
 
   // Fetch reviews for past bookings
   const fetchBookingReviews = async (ownerId) => {
@@ -171,45 +140,6 @@ const Bookings = () => {
     return { currentBookings: current, upcomingBookings: upcoming, pastBookings: past };
   }, [bookings]);
 
-  // Fetch activities for current bookings and set up auto-refresh
-  useEffect(() => {
-    const fetchCurrentActivities = async () => {
-      if (!isAuthenticated || !user || currentBookings.length === 0) {
-        setCurrentBookingActivities([]);
-        return;
-      }
-
-      try {
-        const bookingIds = currentBookings.map(b => b.id);
-
-        const { data, error } = await supabase
-          .from('pet_activities')
-          .select('*')
-          .in('booking_id', bookingIds)
-          .order('activity_timestamp', { ascending: false });
-
-        if (error) throw error;
-        setCurrentBookingActivities(data || []);
-      } catch (error) {
-        console.error('Error fetching current booking activities:', error);
-        setCurrentBookingActivities([]);
-      }
-    };
-
-    // Fetch initially
-    fetchCurrentActivities();
-
-    // Set up auto-refresh every 30 seconds when on Current tab
-    let intervalId;
-    if (activeTab === 'current' && currentBookings.length > 0) {
-      intervalId = setInterval(fetchCurrentActivities, 30000); // Refresh every 30 seconds
-    }
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [isAuthenticated, user, currentBookings, activeTab]);
-
   // Fetch activities for a specific booking
   const fetchActivitiesForBooking = async (bookingId) => {
     setLoadingActivities(true);
@@ -245,62 +175,6 @@ const Bookings = () => {
     setActivities([]);
   };
 
-  // Check if request is on cooldown (90 minutes) - checks both DB and client state
-  const isRequestOnCooldown = (bookingId, requestType) => {
-    // Check database records first (persistent across refreshes)
-    const dbRequest = recentRequests.find(
-      r => r.booking_id === bookingId && r.request_type === requestType
-    );
-
-    if (dbRequest) {
-      const requestTime = new Date(dbRequest.created_at).getTime();
-      const ninetyMinutesAgo = Date.now() - (90 * 60 * 1000);
-      if (requestTime > ninetyMinutesAgo) {
-        return true;
-      }
-    }
-
-    // Also check client-side state (for requests just made in this session)
-    const key = `${bookingId}-${requestType}`;
-    const lastRequestTime = requestCooldowns[key];
-
-    if (!lastRequestTime) return false;
-
-    const ninetyMinutesAgo = Date.now() - (90 * 60 * 1000);
-    return lastRequestTime > ninetyMinutesAgo;
-  };
-
-  // Get remaining cooldown time in minutes
-  const getCooldownRemainingMinutes = (bookingId, requestType) => {
-    // Check database records first
-    const dbRequest = recentRequests.find(
-      r => r.booking_id === bookingId && r.request_type === requestType
-    );
-
-    let lastRequestTime = null;
-
-    if (dbRequest) {
-      lastRequestTime = new Date(dbRequest.created_at).getTime();
-    }
-
-    // Check client-side state
-    const key = `${bookingId}-${requestType}`;
-    const clientRequestTime = requestCooldowns[key];
-
-    // Use the most recent request time
-    if (clientRequestTime && (!lastRequestTime || clientRequestTime > lastRequestTime)) {
-      lastRequestTime = clientRequestTime;
-    }
-
-    if (!lastRequestTime) return 0;
-
-    const elapsed = Date.now() - lastRequestTime;
-    const ninetyMinutes = 90 * 60 * 1000;
-    const remaining = ninetyMinutes - elapsed;
-
-    return Math.ceil(remaining / 60000);
-  };
-
   // Handle go to chat with sitter
   const handleGoToChat = async (booking) => {
     if (!booking || !user) return;
@@ -319,87 +193,6 @@ const Bookings = () => {
     } catch (error) {
       console.error('Failed to navigate to chat:', error);
       alert('Failed to open chat. Please try again.');
-    }
-  };
-
-  // Handle pet care request (walk, feed, play)
-  const handleCareRequest = async (booking, requestType) => {
-    if (!user) return;
-
-    // Check cooldown
-    if (isRequestOnCooldown(booking.id, requestType)) {
-      const remaining = getCooldownRemainingMinutes(booking.id, requestType);
-      alert(`Please wait ${remaining} more minute(s) before sending another ${requestType} request.`);
-      return;
-    }
-
-    try {
-      // Get or create conversation with sitter
-      const conversation = await chatService.getOrCreateConversation(
-        user.id,
-        booking.pet_sitter_id
-      );
-
-      // Send SYSTEM GENERATED message requesting photo
-      const activityEmojis = {
-        walk: '🚶',
-        feed: '🍽️',
-        play: '🎾'
-      };
-
-      const activityLabels = {
-        walk: 'Walk Update',
-        feed: 'Feeding Update',
-        play: 'Playtime Update'
-      };
-
-      const requestMessage = `🤖 SYSTEM GENERATED REQUEST\n\n${activityEmojis[requestType]} ${activityLabels[requestType]} Requested\n\nPlease share a photo of ${requestType === 'walk' ? 'the walk' : requestType === 'feed' ? 'feeding time' : 'playtime'}. Thank you! 🐾`;
-
-      const { data: message, error: messageError } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversation.id,
-          sender_id: user.id,
-          content: requestMessage,
-          metadata: {
-            type: 'pet_care_request',
-            booking_id: booking.id,
-            request_type: requestType,
-            is_system_generated: true,
-          },
-        })
-        .select()
-        .single();
-
-      if (messageError) throw messageError;
-
-      // Log the request in pet_care_requests table
-      const { error: requestError } = await supabase
-        .from('pet_care_requests')
-        .insert({
-          booking_id: booking.id,
-          pet_owner_id: user.id,
-          pet_sitter_id: booking.pet_sitter_id,
-          request_type: requestType,
-          conversation_id: conversation.id,
-          message_id: message.id,
-        });
-
-      if (requestError) throw requestError;
-
-      // Update cooldown in client state
-      setRequestCooldowns(prev => ({
-        ...prev,
-        [`${booking.id}-${requestType}`]: Date.now(),
-      }));
-
-      // Refresh recent requests from database
-      await fetchRecentRequests(user.id);
-
-      alert(`✅ ${activityLabels[requestType]} request sent successfully!\n\nA system-generated message has been sent to your sitter.`);
-    } catch (error) {
-      console.error('Error sending request:', error);
-      alert('Failed to send request. Please try again.');
     }
   };
 
@@ -448,7 +241,7 @@ const Bookings = () => {
         {booking.pets && booking.pets.length > 0 && (
           <div className="mb-2">
             <div className="flex items-center gap-2 flex-wrap">
-              {booking.pets.map((pet, index) => (
+              {booking.pets.map((pet) => (
                 <div key={pet.id} className="flex items-center gap-1.5 bg-[#fef5f6] rounded-full px-2 py-1">
                   {pet.avatar_url ? (
                     <img src={pet.avatar_url} alt={pet.name} className="w-5 h-5 rounded-full object-cover" />
@@ -485,65 +278,6 @@ const Bookings = () => {
           </div>
         )}
       </article>
-    );
-  };
-
-  // Render Pet Care REQUEST card (for current bookings)
-  const renderCareRequestCard = (type, color, icon, activeBookings) => {
-    // Get all current bookings for cooldown check
-    const anyCooldown = activeBookings.some(b => isRequestOnCooldown(b.id, type));
-
-    // Map request type to color-specific add icon
-    const addIconMap = {
-      walk: '/icons/common/add-yellow-icon.svg',
-      feed: '/icons/common/add-green-icon.svg',
-      play: '/icons/common/add-purple-icon.svg',
-    };
-
-    return (
-      <div key={type} className="flex-shrink-0 w-[92px] sm:w-[106px]">
-        <div
-          className="relative bg-white rounded-[10px] cursor-pointer transition-transform hover:scale-105"
-          onClick={() => {
-            if (activeBookings.length === 1) {
-              handleCareRequest(activeBookings[0], type);
-            } else if (activeBookings.length > 1) {
-              // Show booking selector if multiple current bookings
-              alert('Multiple bookings active. Please go to messages to request updates.');
-            } else {
-              alert('No active bookings to request from.');
-            }
-          }}
-        >
-          <div className="w-full h-[12px] sm:h-[15px] rounded-t-[10px]" style={{ backgroundColor: color }}></div>
-          <div className="flex flex-col items-center px-2 sm:px-3 pb-6 sm:pb-7 pt-1">
-            <p className="text-xs sm:text-base font-bold mb-1.5" style={{ color }}>
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </p>
-            <div
-              className="w-[44px] h-[44px] sm:w-[54px] sm:h-[54px] rounded-[8px]"
-              style={{ background: `linear-gradient(to bottom right, ${color}33, ${color}66)` }}
-            >
-              <img src={icon} alt={type} className="w-full h-full p-2" />
-            </div>
-
-            {/* Floating bottom icon - positioned absolutely */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-              {anyCooldown ? (
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 rounded-full flex items-center justify-center shadow-md">
-                  <img src="/icons/common/stopclock-icon.svg" alt="clock" className="w-6 h-6" />
-                </div>
-              ) : (
-                <img
-                  src={addIconMap[type]}
-                  alt={`Add ${type.charAt(0).toUpperCase() + type.slice(1)}`}
-                  className="w-8 h-8 sm:w-10 sm:h-10 shadow-md bg-white rounded-full"
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
     );
   };
 
@@ -666,168 +400,10 @@ const Bookings = () => {
                   Find a Sitter
                 </button>
               </div>
-            ) : selectedCurrentBooking === null ? (
-              <>
-                {/* Booking Cards - Clickable to view timeline */}
-                <div className="mb-4">
-                  <p className="text-xs text-[#6d6d6d] mb-2 px-1">Tap a booking to view timeline and requests</p>
-                  {currentBookings.map(booking => (
-                    <div
-                      key={booking.id}
-                      onClick={() => setSelectedCurrentBooking(booking.id)}
-                      className="cursor-pointer hover:scale-[1.02] transition-transform"
-                    >
-                      {renderBookingCard(booking)}
-                    </div>
-                  ))}
-                </div>
-              </>
             ) : (
-              <>
-                {/* Back Button */}
-                <button
-                  onClick={() => setSelectedCurrentBooking(null)}
-                  className="flex items-center gap-2 text-sm text-[#fb7678] font-semibold mb-4 hover:underline"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back to all bookings
-                </button>
-
-                {/* Selected Booking Card */}
-                <div className="mb-4">
-                  {renderBookingCard(currentBookings.find(b => b.id === selectedCurrentBooking))}
-                </div>
-
-                {/* Pet Care REQUEST Cards */}
-                <div className="bg-[#fb7678e6] rounded-[10px] p-3 sm:p-4 mb-4">
-                  <h2 className="text-sm sm:text-base font-extrabold text-white mb-3 sm:mb-4 text-center">
-                    Pet Care Request
-                  </h2>
-
-                  <div className="flex gap-2 justify-center">
-                    {renderCareRequestCard('walk', '#ffc369', '/icons/common/walk-icon.svg', [currentBookings.find(b => b.id === selectedCurrentBooking)])}
-                    {renderCareRequestCard('feed', '#a2d08a', '/icons/common/feed-icon.svg', [currentBookings.find(b => b.id === selectedCurrentBooking)])}
-                    {renderCareRequestCard('play', '#c0a7fe', '/icons/common/play-icon.svg', [currentBookings.find(b => b.id === selectedCurrentBooking)])}
-                  </div>
-
-                  <p className="text-[10px] text-white text-center mt-10 opacity-90">
-                    Request photo updates from your sitter
-                  </p>
-                  <p className="text-[10px] text-white text-center opacity-90">
-                    (90min cooldown per type)
-                  </p>
-
-                </div>
-
-                {/* Instructions */}
-                <div className="bg-white rounded-[10px] p-3 text-xs text-[#6d6d6d] shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)] mb-4">
-                  <p className="font-semibold mb-1">💡 How it works:</p>
-                  <p>Tap a request card to send a message to your sitter asking for a photo update. Each request type has a 90-minute cooldown to prevent spam.</p>
-                </div>
-
-                {/* Live Activity Timeline for selected booking */}
-                {currentBookingActivities.filter(a => a.booking_id === selectedCurrentBooking).length > 0 && (
-                  <div className="bg-white rounded-[10px] p-4 shadow-[0px_1px_2px_-1px_rgba(0,0,0,0.1),0px_1px_3px_0px_rgba(0,0,0,0.1)]">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-base font-bold text-[#3e2d2e]">Recent Activities</h2>
-                      <span className="text-xs text-[#6d6d6d]">Updates every 30s</span>
-                    </div>
-
-                    {/* Timeline */}
-                    <div className="space-y-4">
-                      {currentBookingActivities.filter(a => a.booking_id === selectedCurrentBooking).slice(0, 5).map((activity, index, filteredArray) => {
-                        const { color, icon } = getActivityStyle(activity.activity_type);
-                        const timeStr = new Date(activity.activity_timestamp).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        });
-                        const dateStr = new Date(activity.activity_timestamp).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                        });
-
-                        return (
-                          <div key={activity.id} className="relative">
-                            <div className="flex items-start gap-3">
-                              {/* Activity Icon */}
-                              <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                                style={{ backgroundColor: color }}
-                              >
-                                {icon && <img src={icon} alt={activity.activity_type} className="w-5 h-5" />}
-                              </div>
-
-                              {/* Activity Details */}
-                              <div className="flex-1 pt-1">
-                                <div className="flex items-start justify-between mb-1">
-                                  <p className="text-sm font-semibold text-black">{activity.activity_title}</p>
-                                  <div className="text-xs text-[#6d6d6d] ml-2 text-right">
-                                    <p>{timeStr}</p>
-                                    <p className="text-[10px]">{dateStr}</p>
-                                  </div>
-                                </div>
-
-                                {activity.activity_description && (
-                                  <p className="text-xs text-[#6d6d6d] mb-2">{activity.activity_description}</p>
-                                )}
-
-                                {/* Image Gallery */}
-                                {activity.image_urls && activity.image_urls.length > 0 && (
-                                  <div className="flex gap-2 flex-wrap">
-                                    {activity.image_urls.slice(0, 3).map((url, i) => (
-                                      <img
-                                        key={i}
-                                        src={url}
-                                        alt={`${activity.activity_type} ${i + 1}`}
-                                        className="w-[80px] h-[80px] rounded-[8px] object-cover shadow-sm"
-                                      />
-                                    ))}
-                                    {activity.image_urls.length > 3 && (
-                                      <div className="w-[80px] h-[80px] rounded-[8px] bg-[#fef5f6] flex items-center justify-center">
-                                        <span className="text-xs text-[#fb7678] font-semibold">
-                                          +{activity.image_urls.length - 3}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Connecting Line */}
-                            {index < filteredArray.length - 1 && (
-                              <div
-                                className="absolute left-[20px] w-0.5 -bottom-4"
-                                style={{
-                                  height: activity.image_urls && activity.image_urls.length > 0 ? '120px' : '32px',
-                                  background: `linear-gradient(to bottom, ${color}, ${getActivityStyle(filteredArray[index + 1].activity_type).color})`,
-                                }}
-                              />
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* View All Link */}
-                    {currentBookingActivities.filter(a => a.booking_id === selectedCurrentBooking).length > 5 && (
-                      <button
-                        onClick={() => {
-                          const selectedBooking = currentBookings.find(b => b.id === selectedCurrentBooking);
-                          if (selectedBooking) {
-                            handleViewTimeline(selectedBooking);
-                          }
-                        }}
-                        className="w-full mt-4 py-2 text-sm text-[#fb7678] font-semibold hover:underline"
-                      >
-                        View All Activities ({currentBookingActivities.filter(a => a.booking_id === selectedCurrentBooking).length})
-                      </button>
-                    )}
-                  </div>
-                )}
-              </>
+              <div>
+                {currentBookings.map(renderBookingCard)}
+              </div>
             )}
           </div>
         )}
